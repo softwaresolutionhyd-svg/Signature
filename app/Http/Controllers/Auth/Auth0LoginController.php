@@ -29,6 +29,8 @@ class Auth0LoginController extends Controller
         }
 
         try {
+            $this->clearStaleAuth0Session($request);
+
             return app(SdkLoginController::class)($request);
         } catch (Throwable $e) {
             report($e);
@@ -88,6 +90,10 @@ class Auth0LoginController extends Controller
             return 'APP_KEY issue — php artisan key:generate chalayein.';
         }
 
+        if (str_contains($message, 'JWT string must contain two dots') || str_contains($message, 'InvalidToken')) {
+            return 'Purani Auth0 session corrupt thi — browser cookies clear karein aur dubara try karein.';
+        }
+
         if (str_contains($message, 'stateful') || str_contains($message, 'session') || str_contains($message, 'Session')) {
             return 'Auth0 session issue — storage/framework/sessions writable hona chahiye.';
         }
@@ -100,5 +106,11 @@ class Auth0LoginController extends Controller
         $message = preg_replace('/\s+/', ' ', trim($e->getMessage())) ?? '';
 
         return mb_substr($message, 0, 180);
+    }
+
+    private function clearStaleAuth0Session(Request $request): void
+    {
+        $request->session()->forget('auth0_session');
+        $request->session()->forget('auth0_transient');
     }
 }
