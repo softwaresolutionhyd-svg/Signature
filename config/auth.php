@@ -40,12 +40,6 @@ return [
             'driver' => 'session',
             'provider' => 'users',
         ],
-
-        'auth0-session' => [
-            'driver' => 'auth0.authenticator',
-            'provider' => 'auth0-provider',
-            'configuration' => 'web',
-        ],
     ],
 
     /*
@@ -69,11 +63,6 @@ return [
         'users' => [
             'driver' => 'eloquent',
             'model' => App\Models\User::class,
-        ],
-
-        'auth0-provider' => [
-            'driver' => 'auth0.provider',
-            'repository' => App\Repositories\Auth0UserRepository::class,
         ],
 
         // 'users' => [

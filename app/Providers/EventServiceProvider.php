@@ -2,10 +2,8 @@
 
 namespace App\Providers;
 
-use App\Listeners\HandleAuth0AuthenticationFailed;
 use App\Listeners\LogUserLogin;
 use App\Listeners\LogUserLogout;
-use Auth0\Laravel\Events\AuthenticationFailed;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Auth\Events\Logout;
 use Illuminate\Auth\Events\Registered;
@@ -25,13 +23,9 @@ class EventServiceProvider extends ServiceProvider
         ],
         Login::class => [
             LogUserLogin::class,
-            \App\Listeners\HandleAuth0Login::class,
         ],
         Logout::class => [
             LogUserLogout::class,
-        ],
-        AuthenticationFailed::class => [
-            HandleAuth0AuthenticationFailed::class,
         ],
     ];
 

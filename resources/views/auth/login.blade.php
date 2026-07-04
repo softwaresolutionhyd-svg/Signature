@@ -52,25 +52,6 @@
 
                 <p class="auth-heading">{{ __('Sign in to your account') }}</p>
 
-                @if(auth0_enabled())
-                    <div class="alert alert-light border small mb-3">
-                        <i class="bi bi-shield-check text-success me-1"></i>
-                        Secure login <strong>Auth0</strong> se — MFA, brute-force protection aur enterprise security.
-                    </div>
-
-                    @error('login')
-                        <div class="alert alert-danger small py-2">{{ $message }}</div>
-                    @enderror
-
-                    <a href="/auth0/login" class="auth-btn-submit text-decoration-none">
-                        <span>{{ __('Continue with Auth0') }}</span>
-                        <i class="bi bi-box-arrow-in-right"></i>
-                    </a>
-
-                    <p class="text-center small text-secondary mt-3 mb-0">
-                        Sirf pehle se registered employees login kar sakte hain.
-                    </p>
-                @else
                 <form method="POST" action="{{ route('login') }}" novalidate autocomplete="off" class="auth-form">
                     @csrf
 
@@ -120,7 +101,6 @@
                         Password reset ki request (admin)
                     </a>
                 </form>
-                @endif
             </div>
         </div>
 

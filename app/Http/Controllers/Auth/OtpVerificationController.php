@@ -12,7 +12,7 @@ class OtpVerificationController extends Controller
     public function __construct(
         private readonly LoginOtpService $loginOtp
     ) {
-        $this->middleware('guest:web');
+        $this->middleware('guest');
     }
 
     public function show(Request $request)

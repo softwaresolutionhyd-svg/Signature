@@ -25,8 +25,8 @@ class LoginController extends Controller
     public function __construct(
         private readonly LoginOtpService $loginOtp
     ) {
-        $this->middleware('guest:web')->except('logout');
-        $this->middleware(auth0_enabled() ? 'auth:auth0-session' : 'auth')->only('logout');
+        $this->middleware('guest')->except('logout');
+        $this->middleware('auth')->only('logout');
     }
 
     public function showLoginForm()
@@ -36,9 +36,6 @@ class LoginController extends Controller
 
     public function login(Request $request)
     {
-        if (auth0_enabled()) {
-            return redirect('/auth0/login');
-        }
         $this->validateLogin($request);
 
         if (method_exists($this, 'hasTooManyLoginAttempts') &&
