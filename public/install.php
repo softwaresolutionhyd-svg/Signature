@@ -184,7 +184,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['do_install'])) {
                         }
                         @file_put_contents($lockFile, date('c').' installed via web installer');
 
-                        $success = 'Install ho gaya. Login: admin@example.com / admin12345 — superadmin@example.com / admin12345';
+                        $success = 'Install ho gaya. Login: admin@example.com / admin12345 — superadmin / admin12345';
                         register_shutdown_function(static function () use ($public) {
                             @unlink($public.DIRECTORY_SEPARATOR.'install.php');
                         });

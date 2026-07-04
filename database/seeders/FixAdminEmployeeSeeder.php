@@ -65,7 +65,7 @@ class FixAdminEmployeeSeeder extends Seeder
         );
 
         User::query()->updateOrCreate(
-            ['email' => 'superadmin@example.com'],
+            ['email' => 'superadmin'],
             [
                 'name' => 'Super Admin',
                 'password' => Hash::make('admin12345'),
@@ -76,7 +76,12 @@ class FixAdminEmployeeSeeder extends Seeder
             ]
         );
 
+        $legacySuperAdmin = User::query()->where('email', 'superadmin@example.com')->first();
+        if ($legacySuperAdmin && ! User::query()->where('email', 'superadmin')->exists()) {
+            $legacySuperAdmin->forceFill(['email' => 'superadmin'])->save();
+        }
+
         $this->command?->info('Company admin: admin@example.com / admin12345 (company: '.$company->name.')');
-        $this->command?->info('Super admin: superadmin@example.com / admin12345');
+        $this->command?->info('Super admin: superadmin / admin12345');
     }
 }
