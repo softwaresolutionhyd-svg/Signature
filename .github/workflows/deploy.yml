@@ -32,29 +32,30 @@ jobs:
             exit 1
           fi
 
+      - name: Prepare clean deploy folder
+        run: |
+          mkdir -p deploy
+          rsync -a \
+            --exclude='.git' \
+            --exclude='.github' \
+            --exclude='node_modules' \
+            --exclude='tests' \
+            --exclude='*.zip' \
+            --exclude='order_taker_app' \
+            --exclude='backup' \
+            --exclude='.env' \
+            --exclude='storage/logs' \
+            --exclude='storage/framework/cache' \
+            --exclude='storage/framework/sessions' \
+            --exclude='storage/framework/views' \
+            ./ deploy/
+
       - name: Deploy via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
           server: ${{ secrets.FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
-          protocol: ftps
-          port: 21
+          local-dir: ./deploy/
           server-dir: ./
           log-level: verbose
-          exclude: |
-            **/.git*
-            **/.git*/**
-            **/.github/**
-            **/node_modules/**
-            **/tests/**
-            **/*.zip
-            order_taker_app/**
-            backup/**
-            .env
-            .env.*
-            !.env.example
-            storage/logs/**
-            storage/framework/cache/**
-            storage/framework/sessions/**
-            storage/framework/views/**
