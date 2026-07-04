@@ -14,7 +14,7 @@ return [
     */
 
     'defaults' => [
-        'guard' => filter_var(env('AUTH0_ENABLED', false), FILTER_VALIDATE_BOOL) ? 'auth0-session' : 'web',
+        'guard' => 'web',
         'passwords' => 'users',
     ],
 

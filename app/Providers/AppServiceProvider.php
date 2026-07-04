@@ -45,6 +45,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        if (function_exists('auth0_enabled') && auth0_enabled()) {
+            config(['auth.defaults.guard' => 'auth0-session']);
+        }
+
         InventoryProduct::observe(InventoryProductObserver::class);
 
         $this->applyProductionSecurity();
