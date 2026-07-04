@@ -45,21 +45,16 @@ git push -u origin main
 
 GitHub repo → **Settings → Secrets and variables → Actions** mein ye 4 secrets hon:
 
-| Secret Name | Tumhara Value |
-|-------------|---------------|
+| Secret Name | Tumhara Exact Value |
+|-------------|---------------------|
 | `FTP_SERVER` | StackCP FTP page par jo **Server/Host** likha ho (e.g. `ftp.softwaresolutions.pk`) |
-| `FTP_USERNAME` | Subdomain wala alag FTP username |
-| `FTP_PASSWORD` | Us FTP account ka password |
-| `FTP_SERVER_DIR` | **Dekho neeche — account type par depend karta hai** |
+| `FTP_USERNAME` | `signature@softwaresolutions.pk` |
+| `FTP_PASSWORD` | Is account ka password |
+| `FTP_SERVER_DIR` | `/` |
 
-**`FTP_SERVER_DIR` — kaun sa value?**
+**`FTP_SERVER_DIR` = `/`** — kyunki `signature@softwaresolutions.pk` account already `public_html/signature` folder par scoped hai. Login ke baad woh folder hi root hota hai.
 
-| FTP account type | `FTP_SERVER_DIR` value |
-|------------------|------------------------|
-| Alag account jo **sirf** `public_html/Signature` par scoped ho | `/` |
-| Main cPanel FTP account (poora account) | `/public_html/Signature/` |
-
-> StackCP mein jab alag FTP account banate ho aur directory `public_html/Signature` select karte ho, to login ke baad woh folder hi root hota hai — is case mein `FTP_SERVER_DIR` = **`/`** use karo.
+> **Case sensitive:** Server par folder `public_html/signature` (lowercase) hai — `Signature` nahi. StackCP mein bhi yehi path dikh raha hai.
 
 Push to `main` par `.github/workflows/deploy.yml` automatically FTP deploy chala degi.
 
@@ -72,7 +67,7 @@ Laravel ki asli entry point `public/` folder hai. cPanel mein verify karo:
 1. **cPanel → Domains → Subdomains** (ya StackCP → Domains)
 2. `signature.softwaresolutions.pk` ka **Document Root** ye ho:
    ```
-   public_html/Signature/public
+   public_html/signature/public
    ```
    **NA ke** sirf `public_html/Signature`
 
@@ -85,7 +80,7 @@ Agar abhi root `public_html/Signature` par hai aur site chal rahi hai, to shayad
 Deploy ke baad server par (StackCP Terminal / cPanel Terminal):
 
 ```bash
-cd ~/public_html/Signature
+cd ~/public_html/signature
 composer install --no-dev --optimize-autoloader
 php artisan key:generate   # sirf pehli dafa agar .env mein APP_KEY empty ho
 php artisan migrate --force
@@ -141,7 +136,7 @@ Cursor mein code change → git push main → GitHub Actions deploy → signatur
 | CSS/JS nahi load | `npm run build` locally, `public/build` commit karo |
 | DB error | Server `.env` mein DB credentials check karo |
 | FTP deploy fail | Secrets names exact match karo; alag FTP account ho to `FTP_SERVER_DIR` = `/` try karo |
-| 404 / blank page | Document root `public_html/Signature/public` set karo |
+| 404 / blank page | Document root `public_html/signature/public` set karo |
 | Files galat jagah upload | StackCP FTP Accounts page se account ki directory confirm karo |
 
 ---
