@@ -12,8 +12,8 @@ Changes are made in Cursor → pushed to GitHub → auto-deployed to hosting via
 
 Repo abhi empty hai. Pehle server par jo Laravel install hai usko yahan push karo.
 
-**Option A — cPanel File Manager / FTP se download:**
-1. Hosting se subdomain folder download karo (usually `public_html/signature` ya jo path hai)
+**Option A — StackCP / cPanel File Manager / FTP se download:**
+1. StackCP → Files → FTP Accounts se subdomain folder download karo: `public_html/Signature`
 2. Local machine par folder kholo
 3. Ye repo clone karo aur files copy karo (`.env` **mat** copy karo repo mein)
 4. Push karo:
@@ -41,27 +41,51 @@ git push -u origin main
 
 ---
 
-### Step 2: GitHub Secrets verify karo
+### Step 2: GitHub Secrets verify karo (StackCP / cPanel)
 
 GitHub repo → **Settings → Secrets and variables → Actions** mein ye 4 secrets hon:
 
-| Secret Name | Example Value |
+| Secret Name | Tumhara Value |
 |-------------|---------------|
-| `FTP_SERVER` | `ftp.softwaresolutions.pk` ya hosting ka FTP host |
-| `FTP_USERNAME` | Subdomain ka alag FTP username |
-| `FTP_PASSWORD` | FTP password |
-| `FTP_SERVER_DIR` | `/public_html/signature/` ya subdomain ka exact path (trailing `/` ke sath) |
+| `FTP_SERVER` | StackCP FTP page par jo **Server/Host** likha ho (e.g. `ftp.softwaresolutions.pk`) |
+| `FTP_USERNAME` | Subdomain wala alag FTP username |
+| `FTP_PASSWORD` | Us FTP account ka password |
+| `FTP_SERVER_DIR` | **Dekho neeche — account type par depend karta hai** |
+
+**`FTP_SERVER_DIR` — kaun sa value?**
+
+| FTP account type | `FTP_SERVER_DIR` value |
+|------------------|------------------------|
+| Alag account jo **sirf** `public_html/Signature` par scoped ho | `/` |
+| Main cPanel FTP account (poora account) | `/public_html/Signature/` |
+
+> StackCP mein jab alag FTP account banate ho aur directory `public_html/Signature` select karte ho, to login ke baad woh folder hi root hota hai — is case mein `FTP_SERVER_DIR` = **`/`** use karo.
 
 Push to `main` par `.github/workflows/deploy.yml` automatically FTP deploy chala degi.
 
 ---
 
+### Step 2b: Subdomain document root (Laravel ke liye zaroori)
+
+Laravel ki asli entry point `public/` folder hai. cPanel mein verify karo:
+
+1. **cPanel → Domains → Subdomains** (ya StackCP → Domains)
+2. `signature.softwaresolutions.pk` ka **Document Root** ye ho:
+   ```
+   public_html/Signature/public
+   ```
+   **NA ke** sirf `public_html/Signature`
+
+Agar abhi root `public_html/Signature` par hai aur site chal rahi hai, to shayad pehle se `.htaccess` redirect laga ho — phir change ki zaroorat nahi. Warna 404/500 aayega deploy ke baad.
+
+---
+
 ### Step 3: Server par one-time Laravel setup
 
-Deploy ke baad server par (cPanel Terminal ya SSH):
+Deploy ke baad server par (StackCP Terminal / cPanel Terminal):
 
 ```bash
-cd /path/to/laravel
+cd ~/public_html/Signature
 composer install --no-dev --optimize-autoloader
 php artisan key:generate   # sirf pehli dafa agar .env mein APP_KEY empty ho
 php artisan migrate --force
@@ -116,7 +140,9 @@ Cursor mein code change → git push main → GitHub Actions deploy → signatur
 | APP_KEY missing | Server par `php artisan key:generate` |
 | CSS/JS nahi load | `npm run build` locally, `public/build` commit karo |
 | DB error | Server `.env` mein DB credentials check karo |
-| FTP deploy fail | Secrets names exact match karo, `FTP_SERVER_DIR` path verify karo |
+| FTP deploy fail | Secrets names exact match karo; alag FTP account ho to `FTP_SERVER_DIR` = `/` try karo |
+| 404 / blank page | Document root `public_html/Signature/public` set karo |
+| Files galat jagah upload | StackCP FTP Accounts page se account ki directory confirm karo |
 
 ---
 
