@@ -29,8 +29,10 @@ class Auth0LoginController extends Controller
         } catch (Throwable $e) {
             report($e);
 
+            $detail = config('app.debug') ? ' ('.$e->getMessage().')' : '';
+
             return redirect()->route('login')->withErrors([
-                'login' => $this->friendlyMessage($e),
+                'login' => $this->friendlyMessage($e).$detail,
             ]);
         }
     }
@@ -40,13 +42,21 @@ class Auth0LoginController extends Controller
         $message = $e->getMessage();
 
         if (str_contains($message, 'domain') || str_contains($message, 'Domain')) {
-            return 'AUTH0_DOMAIN galat hai. Sirf hostname likhein, bina https:// (e.g. tenant.us.auth0.com).';
+            return 'AUTH0_DOMAIN galat hai. Sirf hostname likhein: signature-ss.us.auth0.com (bina https://).';
         }
 
         if (str_contains($message, 'client') || str_contains($message, 'Client')) {
-            return 'AUTH0_CLIENT_ID ya AUTH0_CLIENT_SECRET galat hai. .env check karein.';
+            return 'AUTH0_CLIENT_ID ya AUTH0_CLIENT_SECRET galat/missing hai. .env check karein, phir: php artisan config:cache';
         }
 
-        return 'Auth0 redirect fail ho gaya. Settings check karein: AUTH0_DOMAIN, CLIENT_ID, REDIRECT_URI.';
+        if (str_contains($message, 'redirect') || str_contains($message, 'Redirect')) {
+            return 'AUTH0_REDIRECT_URI galat hai. Auth0 Dashboard mein Allowed Callback URL: https://signature.softwaresolutions.pk/callback';
+        }
+
+        if (str_contains($message, 'cookie') || str_contains($message, 'Cookie')) {
+            return 'APP_KEY ya AUTH0_COOKIE_SECRET issue. .env mein APP_KEY set hona chahiye.';
+        }
+
+        return 'Auth0 redirect fail. Server par yeh check karein: grep AUTH0 .env && php artisan config:cache';
     }
 }
