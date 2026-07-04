@@ -4,7 +4,7 @@ namespace App\Services;
 
 use App\Models\Employee;
 use App\Models\User;
-use App\Services\Messaging\OtpMessenger;
+use App\Services\Messaging\TwilioOtpService;
 use App\Support\CompanySettings;
 use App\Support\PhoneNumber;
 use Illuminate\Support\Facades\Cache;
@@ -21,7 +21,7 @@ class LoginOtpService
     private const MAX_VERIFY_ATTEMPTS = 5;
 
     public function __construct(
-        private readonly OtpMessenger $messenger
+        private readonly TwilioOtpService $twilio
     ) {}
 
     public function requiresOtp(User $user): bool
@@ -59,23 +59,17 @@ class LoginOtpService
         return $normalized !== '' ? $normalized : null;
     }
 
-    public function resolveCallMeBotKeyForUser(User $user): ?string
-    {
-        $employee = Employee::query()
-            ->where('user_id', $user->id)
-            ->when($user->company_id, fn ($q) => $q->where('company_id', $user->company_id))
-            ->first();
-
-        $key = trim((string) ($employee?->callmebot_api_key ?? ''));
-
-        return $key !== '' ? $key : null;
-    }
-
     /**
      * @return array{token: string, masked_phone: string}
      */
     public function startChallenge(User $user, bool $remember, string $phone): array
     {
+        $companyId = (int) $user->company_id;
+
+        if (! $this->twilio->isConfigured($companyId)) {
+            throw new \RuntimeException('Twilio OTP is not configured for this company.');
+        }
+
         $code = (string) random_int(100000, 999999);
         $token = Str::random(64);
 
@@ -84,25 +78,16 @@ class LoginOtpService
             'remember' => $remember,
             'code_hash' => hash('sha256', $code),
             'phone' => $phone,
-            'company_id' => (int) $user->company_id,
+            'company_id' => $companyId,
             'attempts' => 0,
         ], self::TTL_SECONDS);
 
-        $companyName = (string) CompanySettings::get((int) $user->company_id, 'company_name', config('app.name', 'Signature'));
+        $companyName = (string) CompanySettings::get($companyId, 'company_name', config('app.name', 'Signature'));
         $message = "{$companyName} login code: {$code}. Valid for 10 minutes. Do not share this code.";
 
-        $callmebotKey = CompanySettings::usesCallMeBot((int) $user->company_id)
-            ? $this->resolveCallMeBotKeyForUser($user)
-            : null;
-
-        if (CompanySettings::usesCallMeBot((int) $user->company_id) && $callmebotKey === null) {
+        if (! $this->twilio->send($companyId, $phone, $message)) {
             Cache::forget(self::CACHE_PREFIX.$token);
-            throw new \RuntimeException('CallMeBot API key missing on employee record.');
-        }
-
-        if (! $this->messenger->send((int) $user->company_id, $phone, $message, $callmebotKey)) {
-            Cache::forget(self::CACHE_PREFIX.$token);
-            throw new \RuntimeException('OTP could not be sent.');
+            throw new \RuntimeException('OTP could not be sent via Twilio.');
         }
 
         return [

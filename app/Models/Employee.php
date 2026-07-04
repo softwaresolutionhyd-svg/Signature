@@ -23,7 +23,6 @@ class Employee extends Model
         'name',
         'email',
         'phone',
-        'callmebot_api_key',
         'department_id',
         'designation_id',
         'join_date',

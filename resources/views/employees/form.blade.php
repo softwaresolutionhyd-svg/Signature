@@ -28,23 +28,8 @@
                class="form-control @error('phone') is-invalid @enderror" maxlength="60"
                placeholder="03xx xxxxxxx (OTP login ke liye)">
         @error('phone')<div class="invalid-feedback">{{ $message }}</div>@enderror
-        <div class="form-text">Login account ho to ye number par OTP jayega (SMS / WhatsApp).</div>
+        <div class="form-text">Login account ho to is number par Twilio SMS OTP jayega.</div>
     </div>
-
-    @if (! empty($usesCallMeBot ?? false))
-    <div class="col-12 col-md-6">
-        <label class="form-label">CallMeBot API key <span class="text-danger">*</span></label>
-        <input type="text" name="callmebot_api_key" value="{{ old('callmebot_api_key', $employee->callmebot_api_key ?? '') }}"
-               class="form-control @error('callmebot_api_key') is-invalid @enderror" maxlength="32"
-               placeholder="12345678" autocomplete="off">
-        @error('callmebot_api_key')<div class="invalid-feedback">{{ $message }}</div>@enderror
-        <div class="form-text">
-            WhatsApp par CallMeBot number ko message karein:
-            <code>I allow callmebot to send me messages</code> — jo API key aaye wo yahan likhein.
-            (<a href="https://www.callmebot.com/blog/free-api-whatsapp-messages/" target="_blank" rel="noopener">CallMeBot activation guide</a>)
-        </div>
-    </div>
-    @endif
 
     <div class="col-12 col-md-4">
         <div class="d-flex justify-content-between align-items-center">
