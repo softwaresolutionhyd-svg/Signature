@@ -298,13 +298,6 @@ function auth0_cookie_secret(): string
     }
 
     $appKey = (string) config('app.key', '');
-    if (str_starts_with($appKey, 'base64:')) {
-        $decoded = base64_decode(substr($appKey, 7), true);
-        if ($decoded !== false && strlen($decoded) >= 32) {
-            return $decoded;
-        }
-    }
-
     if (strlen($appKey) >= 32) {
         return $appKey;
     }

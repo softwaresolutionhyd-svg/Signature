@@ -19,16 +19,8 @@ if ($redirectUri === '') {
 $appKey = (string) env('APP_KEY', '');
 $cookieSecret = trim((string) env('AUTH0_COOKIE_SECRET', ''));
 if ($cookieSecret === '' || strlen($cookieSecret) < 32) {
-    if (str_starts_with($appKey, 'base64:')) {
-        $decoded = base64_decode(substr($appKey, 7), true);
-        $cookieSecret = ($decoded !== false && strlen($decoded) >= 32)
-            ? $decoded
-            : hash('sha256', $appKey);
-    } elseif (strlen($appKey) >= 32) {
-        $cookieSecret = $appKey;
-    } else {
-        $cookieSecret = hash('sha256', $appKey !== '' ? $appKey : 'signature-auth0');
-    }
+    // Auth0 SDK expects a stable string secret; use APP_KEY as-is (incl. base64: prefix).
+    $cookieSecret = strlen($appKey) >= 32 ? $appKey : hash('sha256', $appKey !== '' ? $appKey : 'signature-auth0');
 }
 
 $enabled = filter_var(env('AUTH0_ENABLED', false), FILTER_VALIDATE_BOOL)
