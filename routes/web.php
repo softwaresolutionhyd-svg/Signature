@@ -92,6 +92,7 @@ Route::middleware(['auth', 'employee', 'passwordChanged'])->group(function () {
     Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::get('/profile/two-factor/setup', [TwoFactorController::class, 'setup'])->name('profile.two-factor.setup');
     Route::post('/profile/two-factor/confirm', [TwoFactorController::class, 'confirm'])->name('profile.two-factor.confirm');
+    Route::get('/profile/two-factor/recovery', [TwoFactorController::class, 'recovery'])->name('profile.two-factor.recovery');
     Route::post('/profile/two-factor/disable', [TwoFactorController::class, 'disable'])->name('profile.two-factor.disable');
 
     Route::get('/updates', [CompanyUpdateController::class, 'tenantIndex'])->name('updates.index');

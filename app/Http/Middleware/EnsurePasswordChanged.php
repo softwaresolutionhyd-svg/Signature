@@ -26,6 +26,7 @@ class EnsurePasswordChanged
             'profile.update',
             'profile.two-factor.setup',
             'profile.two-factor.confirm',
+            'profile.two-factor.recovery',
             'profile.two-factor.disable'
         )) {
             return $next($request);
