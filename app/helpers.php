@@ -283,11 +283,5 @@ function mobile_app_url(): ?string
 /** Whether Auth0 secure login is active (requires SDK + credentials in config). */
 function auth0_enabled(): bool
 {
-    if (! filter_var(config('auth0.enabled', false), FILTER_VALIDATE_BOOL)) {
-        return false;
-    }
-
-    return filled(config('auth0.domain'))
-        && filled(config('auth0.client_id'))
-        && filled(config('auth0.client_secret'));
+    return (bool) config('auth0.enabled', false);
 }

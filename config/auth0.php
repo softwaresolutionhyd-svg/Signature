@@ -5,7 +5,10 @@ declare(strict_types=1);
 use Auth0\Laravel\Configuration;
 use Auth0\SDK\Configuration\SdkConfiguration;
 
-$enabled = filter_var(env('AUTH0_ENABLED', false), FILTER_VALIDATE_BOOL);
+$enabled = filter_var(env('AUTH0_ENABLED', false), FILTER_VALIDATE_BOOL)
+    && filled(env('AUTH0_DOMAIN'))
+    && filled(env('AUTH0_CLIENT_ID'))
+    && filled(env('AUTH0_CLIENT_SECRET'));
 
 return [
     'enabled' => $enabled,
@@ -14,8 +17,8 @@ return [
     'client_secret' => env('AUTH0_CLIENT_SECRET'),
     'redirect_uri' => env('AUTH0_REDIRECT_URI', rtrim((string) env('APP_URL', ''), '/').'/callback'),
 
-    'registerGuardsMiddleware' => $enabled,
-    'registerMiddleware' => $enabled,
+    'registerGuardsMiddleware' => false,
+    'registerMiddleware' => false,
     'registerAuthenticationRoutes' => $enabled,
     'configurationPath' => null,
 
