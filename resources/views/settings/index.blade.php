@@ -652,6 +652,14 @@
                         </select>
                     </div>
                     <div class="col-md-4">
+                        <label class="form-label">WhatsApp provider</label>
+                        @php $whatsappProvider = old('otp_whatsapp_provider', $settings['otp_whatsapp_provider'] ?? 'meta'); @endphp
+                        <select name="otp_whatsapp_provider" class="form-select" id="otp_whatsapp_provider">
+                            <option value="meta" @selected($whatsappProvider === 'meta')>Meta Cloud API (Business)</option>
+                            <option value="callmebot" @selected($whatsappProvider === 'callmebot')>CallMeBot (free, personal WhatsApp)</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
                         <label class="form-label">SMS method</label>
                         <select name="otp_sms_method" class="form-select">
                             <option value="post" @selected(old('otp_sms_method', $settings['otp_sms_method'] ?? 'post') === 'post')>POST</option>
@@ -664,17 +672,26 @@
                                value="{{ old('otp_sms_sender', $settings['otp_sms_sender'] ?? '') }}"
                                placeholder="Optional">
                     </div>
-                    <div class="col-md-6">
+                    <div class="col-md-6" id="meta_whatsapp_token_wrap">
                         <label class="form-label">WhatsApp API token</label>
                         <input type="password" name="otp_whatsapp_token" class="form-control" autocomplete="off"
                                value="{{ old('otp_whatsapp_token', $settings['otp_whatsapp_token'] ?? '') }}"
                                placeholder="Meta Cloud API access token">
                     </div>
-                    <div class="col-md-6">
+                    <div class="col-md-6" id="meta_whatsapp_phone_wrap">
                         <label class="form-label">WhatsApp Phone Number ID</label>
                         <input type="text" name="otp_whatsapp_phone_id" class="form-control"
                                value="{{ old('otp_whatsapp_phone_id', $settings['otp_whatsapp_phone_id'] ?? '') }}"
                                placeholder="e.g. 123456789012345">
+                    </div>
+                    <div class="col-12" id="callmebot_help" @if($whatsappProvider !== 'callmebot') style="display:none" @endif>
+                        <div class="alert alert-info small mb-0">
+                            <strong>CallMeBot setup:</strong>
+                            Har employee apne WhatsApp se pehle activate kare — CallMeBot ko message bhejein
+                            <code>I allow callmebot to send me messages</code>.
+                            Reply mein jo API key mile, employee record mein save karein.
+                            Meta token ki zaroorat nahi — sirf employee ka CallMeBot key chahiye.
+                        </div>
                     </div>
                     <div class="col-md-8">
                         <label class="form-label">SMS API URL</label>
@@ -924,6 +941,23 @@ document.querySelector('[name="invoice_prefix"]')?.addEventListener('input', e =
             bootstrap.Tab.getOrCreateInstance(btn).show();
         }
     }
+})();
+
+(function () {
+    const providerSelect = document.getElementById('otp_whatsapp_provider');
+    const help = document.getElementById('callmebot_help');
+    const metaToken = document.getElementById('meta_whatsapp_token_wrap');
+    const metaPhone = document.getElementById('meta_whatsapp_phone_wrap');
+
+    function syncWhatsAppProviderUi() {
+        const isCallMeBot = providerSelect?.value === 'callmebot';
+        if (help) help.style.display = isCallMeBot ? '' : 'none';
+        if (metaToken) metaToken.style.display = isCallMeBot ? 'none' : '';
+        if (metaPhone) metaPhone.style.display = isCallMeBot ? 'none' : '';
+    }
+
+    providerSelect?.addEventListener('change', syncWhatsAppProviderUi);
+    syncWhatsAppProviderUi();
 })();
 </script>
 @endsection

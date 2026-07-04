@@ -3,18 +3,19 @@
 namespace App\Services\Messaging;
 
 use App\Support\CompanySettings;
+use App\Support\PhoneNumber;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 class OtpMessenger
 {
-    public function send(int $companyId, string $phone, string $message): bool
+    public function send(int $companyId, string $phone, string $message, ?string $callmebotApiKey = null): bool
     {
         $channel = CompanySettings::otpChannel($companyId);
         $sent = false;
 
         if (in_array($channel, ['whatsapp', 'both'], true)) {
-            $sent = $this->sendWhatsApp($companyId, $phone, $message) || $sent;
+            $sent = $this->sendWhatsApp($companyId, $phone, $message, $callmebotApiKey) || $sent;
         }
 
         if (in_array($channel, ['sms', 'both'], true)) {
@@ -24,7 +25,76 @@ class OtpMessenger
         return $sent;
     }
 
-    private function sendWhatsApp(int $companyId, string $phone, string $message): bool
+    private function sendWhatsApp(int $companyId, string $phone, string $message, ?string $callmebotApiKey = null): bool
+    {
+        if (CompanySettings::otpWhatsAppProvider($companyId) === 'callmebot') {
+            return $this->sendCallMeBot($companyId, $phone, $message, $callmebotApiKey);
+        }
+
+        return $this->sendMetaWhatsApp($companyId, $phone, $message);
+    }
+
+    private function sendCallMeBot(int $companyId, string $phone, string $message, ?string $callmebotApiKey): bool
+    {
+        $apiKey = trim((string) $callmebotApiKey);
+        if ($apiKey === '') {
+            Log::warning('CallMeBot OTP skipped: employee API key missing', [
+                'company_id' => $companyId,
+            ]);
+
+            return false;
+        }
+
+        $internationalPhone = PhoneNumber::toInternational($phone);
+        if ($internationalPhone === '') {
+            return false;
+        }
+
+        try {
+            $response = Http::timeout(20)->get('https://api.callmebot.com/whatsapp.php', [
+                'phone' => $internationalPhone,
+                'text' => $message,
+                'apikey' => $apiKey,
+            ]);
+
+            $body = strtolower(trim($response->body()));
+
+            if ($response->successful() && $this->callMeBotResponseLooksSuccessful($body)) {
+                return true;
+            }
+
+            Log::warning('CallMeBot OTP send failed', [
+                'company_id' => $companyId,
+                'status' => $response->status(),
+                'body' => $response->body(),
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('CallMeBot OTP exception', [
+                'company_id' => $companyId,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        return false;
+    }
+
+    private function callMeBotResponseLooksSuccessful(string $body): bool
+    {
+        if ($body === '') {
+            return false;
+        }
+
+        if (str_contains($body, 'error') || str_contains($body, 'invalid') || str_contains($body, 'fail')) {
+            return false;
+        }
+
+        return str_contains($body, 'queue')
+            || str_contains($body, 'sent')
+            || str_contains($body, 'message added')
+            || str_contains($body, 'ok');
+    }
+
+    private function sendMetaWhatsApp(int $companyId, string $phone, string $message): bool
     {
         $token = trim((string) CompanySettings::get($companyId, 'otp_whatsapp_token', ''));
         $phoneId = trim((string) CompanySettings::get($companyId, 'otp_whatsapp_phone_id', ''));

@@ -28,6 +28,14 @@ class PhoneNumber
         return $digits;
     }
 
+    /** E.164-style prefix for WhatsApp APIs (e.g. +923001234567). */
+    public static function toInternational(string $phone): string
+    {
+        $digits = self::normalize($phone);
+
+        return $digits !== '' ? '+'.$digits : '';
+    }
+
     public static function mask(string $phone): string
     {
         $digits = self::normalize($phone);
