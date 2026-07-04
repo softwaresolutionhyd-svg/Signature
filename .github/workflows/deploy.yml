@@ -9,10 +9,13 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
 
       - name: Validate FTP secrets
         run: |
@@ -35,13 +38,19 @@ jobs:
           server: ${{ secrets.FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
+          protocol: ftps
+          port: 21
           server-dir: ./
+          log-level: verbose
           exclude: |
             **/.git*
+            **/.git*/**
             **/.github/**
             **/node_modules/**
             **/tests/**
             **/*.zip
+            order_taker_app/**
+            backup/**
             .env
             .env.*
             !.env.example
