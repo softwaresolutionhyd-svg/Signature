@@ -288,3 +288,26 @@ function auth0_enabled(): bool
         && filled(config('auth0.client_id'))
         && filled(config('auth0.client_secret'));
 }
+
+/** Cookie secret for Auth0 SDK session (minimum 32 bytes). */
+function auth0_cookie_secret(): string
+{
+    $configured = trim((string) config('auth0.cookie_secret', ''));
+    if ($configured !== '' && strlen($configured) >= 32) {
+        return $configured;
+    }
+
+    $appKey = (string) config('app.key', '');
+    if (str_starts_with($appKey, 'base64:')) {
+        $decoded = base64_decode(substr($appKey, 7), true);
+        if ($decoded !== false && strlen($decoded) >= 32) {
+            return $decoded;
+        }
+    }
+
+    if (strlen($appKey) >= 32) {
+        return $appKey;
+    }
+
+    return hash('sha256', $appKey !== '' ? $appKey : (string) config('app.name', 'signature'));
+}
