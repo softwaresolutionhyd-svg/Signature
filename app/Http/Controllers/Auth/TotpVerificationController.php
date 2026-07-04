@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Services\LoginRateLimitService;
 use App\Services\LoginTotpService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -10,7 +11,8 @@ use Illuminate\Support\Facades\Auth;
 class TotpVerificationController extends Controller
 {
     public function __construct(
-        private readonly LoginTotpService $loginTotp
+        private readonly LoginTotpService $loginTotp,
+        private readonly LoginRateLimitService $rateLimit
     ) {
         $this->middleware('guest');
     }
@@ -28,6 +30,14 @@ class TotpVerificationController extends Controller
 
     public function verify(Request $request)
     {
+        $rateKey = $this->rateLimit->keyForIp('login-totp', $request);
+
+        if ($this->rateLimit->tooManyAttempts($rateKey)) {
+            return back()->withErrors([
+                'code' => $this->rateLimit->lockoutMessage($rateKey),
+            ]);
+        }
+
         $token = (string) $request->session()->get('login_totp_token', '');
         if ($token === '') {
             return redirect()->route('login')->withErrors([
@@ -41,11 +51,14 @@ class TotpVerificationController extends Controller
 
         $result = $this->loginTotp->verify($token, $data['code']);
         if ($result === null) {
+            $this->rateLimit->hit($rateKey);
+
             return back()->withErrors([
-                'code' => 'Galat ya expire code. Google Authenticator se 6-digit code enter karein.',
+                'code' => $this->rateLimit->failedCodeMessage($rateKey, 'Authenticator code'),
             ]);
         }
 
+        $this->rateLimit->clear($rateKey);
         $request->session()->forget('login_totp_token');
         Auth::login($result['user'], $result['remember']);
         $request->session()->regenerate();
