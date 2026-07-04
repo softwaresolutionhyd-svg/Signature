@@ -49,6 +49,8 @@ use App\Http\Controllers\DatabaseBackupController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Auth\PasswordResetRequestController as GuestPasswordResetRequestController;
 use App\Http\Controllers\Auth\OtpVerificationController;
+use App\Http\Controllers\Auth\TotpVerificationController;
+use App\Http\Controllers\TwoFactorController;
 use App\Http\Controllers\Admin\PasswordResetRequestController as AdminPasswordResetRequestController;
 use App\Http\Controllers\SyncStatusController;
 
@@ -75,6 +77,8 @@ Route::middleware('guest')->group(function () {
     Route::get('/login/verify-otp', [OtpVerificationController::class, 'show'])->name('login.verify-otp');
     Route::post('/login/verify-otp', [OtpVerificationController::class, 'verify'])->name('login.verify-otp.submit');
     Route::post('/login/resend-otp', [OtpVerificationController::class, 'resend'])->name('login.resend-otp');
+    Route::get('/login/verify-totp', [TotpVerificationController::class, 'show'])->name('login.verify-totp');
+    Route::post('/login/verify-totp', [TotpVerificationController::class, 'verify'])->name('login.verify-totp.submit');
     Route::get('/request-password-reset', [GuestPasswordResetRequestController::class, 'create'])->name('password-reset-request.create');
     Route::post('/request-password-reset', [GuestPasswordResetRequestController::class, 'store'])->name('password-reset-request.store');
 });
@@ -86,6 +90,9 @@ Route::middleware(['auth', 'employee', 'passwordChanged'])->group(function () {
     Route::middleware(['tenant', 'company', 'companyTenantReady'])->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::get('/profile/two-factor/setup', [TwoFactorController::class, 'setup'])->name('profile.two-factor.setup');
+    Route::post('/profile/two-factor/confirm', [TwoFactorController::class, 'confirm'])->name('profile.two-factor.confirm');
+    Route::post('/profile/two-factor/disable', [TwoFactorController::class, 'disable'])->name('profile.two-factor.disable');
 
     Route::get('/updates', [CompanyUpdateController::class, 'tenantIndex'])->name('updates.index');
     Route::post('/updates/install/{companyUpdate}', [CompanyUpdateController::class, 'installFeature'])->name('updates.install');

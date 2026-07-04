@@ -97,4 +97,48 @@
         </form>
     </div>
 </div>
+
+<div class="card shadow-sm mt-4" style="max-width: 520px;">
+    <div class="card-body">
+        <h5 class="fw-semibold mb-1">Google Authenticator (2FA)</h5>
+        <p class="text-secondary small mb-3">
+            Login par extra security ke liye Authenticator app se code mangwaya jayega.
+        </p>
+
+        @if ($user->hasTwoFactorEnabled())
+            <div class="alert alert-success py-2 small mb-3">
+                <i class="bi bi-shield-check"></i>
+                2FA enabled hai.
+            </div>
+
+            <form method="POST" action="{{ route('profile.two-factor.disable') }}" autocomplete="off">
+                @csrf
+                <div class="mb-3">
+                    <label class="form-label" for="disable_current_password">Current password</label>
+                    <input type="password" name="current_password" id="disable_current_password"
+                           class="form-control @error('current_password') is-invalid @enderror"
+                           autocomplete="current-password" required>
+                    @error('current_password')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                </div>
+                <div class="mb-3">
+                    <label class="form-label" for="disable_code">Authenticator ya recovery code</label>
+                    <input type="text" name="code" id="disable_code"
+                           class="form-control @error('code') is-invalid @enderror"
+                           autocomplete="one-time-code" required>
+                    @error('code')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                </div>
+                <button type="submit" class="btn btn-outline-danger">Disable 2FA</button>
+            </form>
+        @else
+            <a href="{{ route('profile.two-factor.setup') }}" class="btn btn-outline-primary">
+                <i class="bi bi-shield-lock"></i>
+                Enable Google Authenticator
+            </a>
+        @endif
+    </div>
+</div>
 @endsection
