@@ -11,8 +11,8 @@
         "laravel/sanctum": "^3.3",
         "laravel/tinker": "^2.8",
         "laravel/ui": "^4.6",
-        "pragmarx/google2fa": "^8.0",
-        "bacon/bacon-qr-code": "^2.0",
+        "pragmarx/google2fa": "^9.0",
+        "bacon/bacon-qr-code": "^3.0",
         "twilio/sdk": "^8.0"
     },
     "require-dev": {
