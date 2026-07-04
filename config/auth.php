@@ -42,8 +42,9 @@ return [
         ],
 
         'auth0-session' => [
-            'driver' => 'auth0.session',
+            'driver' => 'auth0.authenticator',
             'provider' => 'auth0-provider',
+            'configuration' => 'web',
         ],
     ],
 
