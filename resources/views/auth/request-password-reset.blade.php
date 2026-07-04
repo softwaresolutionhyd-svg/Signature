@@ -5,7 +5,7 @@
 @php($loginBrand = login_page_branding())
 
 @section('content')
-<div class="auth-shell">
+<div class="auth-shell auth-shell--solo">
     <div class="auth-panel">
         <div class="auth-panel-inner">
             <div class="auth-brand-top">
