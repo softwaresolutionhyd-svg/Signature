@@ -25,8 +25,8 @@ class LoginController extends Controller
     public function __construct(
         private readonly LoginOtpService $loginOtp
     ) {
-        $this->middleware('guest')->except('logout');
-        $this->middleware('auth')->only('logout');
+        $this->middleware('guest:web')->except('logout');
+        $this->middleware(auth0_enabled() ? 'auth:auth0-session' : 'auth')->only('logout');
     }
 
     public function showLoginForm()

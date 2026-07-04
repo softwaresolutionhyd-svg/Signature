@@ -52,6 +52,9 @@ use App\Http\Controllers\Auth\LogoutController;
 use App\Http\Controllers\Auth\OtpVerificationController;
 use App\Http\Controllers\Admin\PasswordResetRequestController as AdminPasswordResetRequestController;
 use App\Http\Controllers\SyncStatusController;
+use Auth0\Laravel\Controllers\CallbackController as Auth0CallbackController;
+use Auth0\Laravel\Controllers\LoginController as Auth0LoginController;
+use Auth0\Laravel\Controllers\LogoutController as Auth0LogoutController;
 
 /*
 |--------------------------------------------------------------------------
@@ -72,17 +75,23 @@ Route::get('/', function () {
 
 if (auth0_enabled()) {
     Route::get('/login', [App\Http\Controllers\Auth\LoginController::class, 'showLoginForm'])
-        ->middleware('guest')
+        ->middleware('guest:web')
         ->name('login');
 
     Route::match(['get', 'post'], '/logout', LogoutController::class)
-        ->middleware('auth')
+        ->middleware('auth:auth0-session')
         ->name('logout');
+
+    Route::middleware('web')->group(function (): void {
+        Route::get('/auth0/login', Auth0LoginController::class)->name('auth0.login');
+        Route::get('/auth0/logout', Auth0LogoutController::class)->name('auth0.logout');
+        Route::get('/callback', Auth0CallbackController::class)->name('auth0.callback');
+    });
 } else {
     Auth::routes(['register' => false, 'reset' => false]);
 }
 
-Route::middleware('guest')->group(function () {
+Route::middleware('guest:web')->group(function () {
     Route::get('/login/verify-otp', [OtpVerificationController::class, 'show'])->name('login.verify-otp');
     Route::post('/login/verify-otp', [OtpVerificationController::class, 'verify'])->name('login.verify-otp.submit');
     Route::post('/login/resend-otp', [OtpVerificationController::class, 'resend'])->name('login.resend-otp');

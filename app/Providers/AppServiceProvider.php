@@ -6,6 +6,7 @@ use App\Models\Company;
 use App\Models\CompanyUpdate;
 use App\Models\InventoryProduct;
 use App\Observers\InventoryProductObserver;
+use App\Repositories\Auth0UserRepository;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\URL;
@@ -21,6 +22,9 @@ class AppServiceProvider extends ServiceProvider
         if (! function_exists('fmt_num')) {
             require_once base_path('app/helpers.php');
         }
+
+        $this->app->singleton(Auth0UserRepository::class);
+        $this->app->singleton('auth0.repository', fn (): Auth0UserRepository => $this->app->make(Auth0UserRepository::class));
 
         $this->ensureStorageDirectories();
     }
