@@ -41,11 +41,15 @@ class EmployeeController extends Controller
 
     public function create()
     {
+        $cid = current_company_id();
+        abort_if($cid === null, 403);
+
         $departments = EmployeeDepartment::query()->where('active', true)->orderBy('name')->get(['id', 'name']);
         $designations = EmployeeDesignation::query()->where('active', true)->orderBy('name')->get(['id', 'name']);
         $employee = new Employee();
+        $usesCallMeBot = CompanySettings::usesCallMeBot($cid);
 
-        return view('employees.create', compact('departments', 'designations', 'employee'));
+        return view('employees.create', compact('departments', 'designations', 'employee', 'usesCallMeBot'));
     }
 
     public function store(Request $request)
@@ -63,6 +67,7 @@ class EmployeeController extends Controller
             'name' => ['required', 'string', 'max:150'],
             'email' => ['nullable', 'email', 'max:200'],
             'phone' => ['nullable', 'string', 'max:60'],
+            'callmebot_api_key' => ['nullable', 'string', 'max:32'],
             'department_id' => ['nullable', 'integer', 'exists:tenant.employee_departments,id'],
             'designation_id' => ['nullable', 'integer', 'exists:tenant.employee_designations,id'],
             'join_date' => ['nullable', 'date'],
@@ -76,6 +81,7 @@ class EmployeeController extends Controller
         ]);
 
         $this->ensurePhoneForLoginAccount($data, $cid);
+        $this->ensureCallMeBotForLoginAccount($data, $cid);
 
         $data['active'] = (bool) ($data['active'] ?? false);
         $data['salary'] = $data['salary'] ?? 0;
@@ -106,6 +112,7 @@ class EmployeeController extends Controller
                     'name' => $data['name'],
                     'email' => $data['email'] ?? null,
                     'phone' => $data['phone'] ?? null,
+                    'callmebot_api_key' => $data['callmebot_api_key'] ?? null,
                     'department_id' => $data['department_id'],
                     'designation_id' => $data['designation_id'],
                     'join_date' => $data['join_date'] ?? null,
@@ -126,10 +133,15 @@ class EmployeeController extends Controller
 
     public function edit(Employee $employee)
     {
+        $cid = current_company_id();
+        abort_if($cid === null, 403);
+
         $employee->load(['user', 'department', 'designation']);
         $departments = EmployeeDepartment::query()->where('active', true)->orderBy('name')->get(['id', 'name']);
         $designations = EmployeeDesignation::query()->where('active', true)->orderBy('name')->get(['id', 'name']);
-        return view('employees.edit', compact('employee', 'departments', 'designations'));
+        $usesCallMeBot = CompanySettings::usesCallMeBot($cid);
+
+        return view('employees.edit', compact('employee', 'departments', 'designations', 'usesCallMeBot'));
     }
 
     public function update(Request $request, Employee $employee)
@@ -149,6 +161,7 @@ class EmployeeController extends Controller
             'name' => ['required', 'string', 'max:150'],
             'email' => ['nullable', 'email', 'max:200'],
             'phone' => ['nullable', 'string', 'max:60'],
+            'callmebot_api_key' => ['nullable', 'string', 'max:32'],
             'department_id' => ['nullable', 'integer', 'exists:tenant.employee_departments,id'],
             'designation_id' => ['nullable', 'integer', 'exists:tenant.employee_designations,id'],
             'join_date' => ['nullable', 'date'],
@@ -162,6 +175,7 @@ class EmployeeController extends Controller
         ]);
 
         $this->ensurePhoneForLoginAccount($data, $cid, $employee);
+        $this->ensureCallMeBotForLoginAccount($data, $cid, $employee);
 
         $data['active'] = (bool) ($data['active'] ?? false);
         $data['salary'] = $data['salary'] ?? 0;
@@ -205,6 +219,7 @@ class EmployeeController extends Controller
             'name' => $data['name'],
             'email' => $data['email'] ?? null,
             'phone' => $data['phone'] ?? null,
+            'callmebot_api_key' => $data['callmebot_api_key'] ?? null,
             'department_id' => $data['department_id'],
             'designation_id' => $data['designation_id'],
             'join_date' => $data['join_date'] ?? null,
@@ -288,6 +303,30 @@ class EmployeeController extends Controller
         if (trim((string) ($data['phone'] ?? '')) === '') {
             throw \Illuminate\Validation\ValidationException::withMessages([
                 'phone' => 'Login account ke sath mobile number zaroori hai (OTP verification ke liye).',
+            ]);
+        }
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    private function ensureCallMeBotForLoginAccount(array $data, int $companyId, ?Employee $employee = null): void
+    {
+        if (! CompanySettings::usesCallMeBot($companyId)) {
+            return;
+        }
+
+        $hasLoginAccount = ! empty($data['account_username'])
+            || ! empty($data['account_password'])
+            || ($employee !== null && $employee->user_id);
+
+        if (! $hasLoginAccount) {
+            return;
+        }
+
+        if (trim((string) ($data['callmebot_api_key'] ?? '')) === '') {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'callmebot_api_key' => 'CallMeBot WhatsApp OTP ke liye employee ka API key zaroori hai.',
             ]);
         }
     }

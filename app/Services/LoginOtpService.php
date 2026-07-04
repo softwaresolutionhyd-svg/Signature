@@ -59,6 +59,18 @@ class LoginOtpService
         return $normalized !== '' ? $normalized : null;
     }
 
+    public function resolveCallMeBotKeyForUser(User $user): ?string
+    {
+        $employee = Employee::query()
+            ->where('user_id', $user->id)
+            ->when($user->company_id, fn ($q) => $q->where('company_id', $user->company_id))
+            ->first();
+
+        $key = trim((string) ($employee?->callmebot_api_key ?? ''));
+
+        return $key !== '' ? $key : null;
+    }
+
     /**
      * @return array{token: string, masked_phone: string}
      */
@@ -79,7 +91,16 @@ class LoginOtpService
         $companyName = (string) CompanySettings::get((int) $user->company_id, 'company_name', config('app.name', 'Signature'));
         $message = "{$companyName} login code: {$code}. Valid for 10 minutes. Do not share this code.";
 
-        if (! $this->messenger->send((int) $user->company_id, $phone, $message)) {
+        $callmebotKey = CompanySettings::usesCallMeBot((int) $user->company_id)
+            ? $this->resolveCallMeBotKeyForUser($user)
+            : null;
+
+        if (CompanySettings::usesCallMeBot((int) $user->company_id) && $callmebotKey === null) {
+            Cache::forget(self::CACHE_PREFIX.$token);
+            throw new \RuntimeException('CallMeBot API key missing on employee record.');
+        }
+
+        if (! $this->messenger->send((int) $user->company_id, $phone, $message, $callmebotKey)) {
             Cache::forget(self::CACHE_PREFIX.$token);
             throw new \RuntimeException('OTP could not be sent.');
         }

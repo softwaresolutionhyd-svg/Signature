@@ -84,8 +84,12 @@ class LoginController extends Controller
             } catch (\Throwable $e) {
                 report($e);
 
+                $message = str_contains($e->getMessage(), 'CallMeBot')
+                    ? 'CallMeBot API key employee record mein missing hai. Admin se employee form mein key add karwaein.'
+                    : 'OTP bhejne mein masla aaya. Settings → Login OTP mein SMS/WhatsApp API check karein.';
+
                 return back()->withErrors([
-                    'login' => 'OTP bhejne mein masla aaya. Settings → Login OTP mein SMS/WhatsApp API check karein.',
+                    'login' => $message,
                 ])->withInput($request->only('login', 'remember'));
             }
 
