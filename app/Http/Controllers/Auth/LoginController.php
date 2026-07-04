@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Services\LoginOtpService;
+use App\Services\LoginTotpService;
 use Illuminate\Foundation\Auth\AuthenticatesUsers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -23,7 +24,8 @@ class LoginController extends Controller
     protected $decayMinutes = 10;
 
     public function __construct(
-        private readonly LoginOtpService $loginOtp
+        private readonly LoginOtpService $loginOtp,
+        private readonly LoginTotpService $loginTotp
     ) {
         $this->middleware('guest')->except('logout');
         $this->middleware('auth')->only('logout');
@@ -52,6 +54,14 @@ class LoginController extends Controller
             $this->incrementLoginAttempts($request);
 
             return $this->sendFailedLoginResponse($request);
+        }
+
+        if ($user->hasTwoFactorEnabled()) {
+            $token = $this->loginTotp->startChallenge($user, $request->boolean('remember'));
+            $request->session()->put('login_totp_token', $token);
+            $this->clearLoginAttempts($request);
+
+            return redirect()->route('login.verify-totp');
         }
 
         if ($this->loginOtp->requiresOtp($user)) {

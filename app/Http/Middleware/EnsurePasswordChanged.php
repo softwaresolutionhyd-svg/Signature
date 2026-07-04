@@ -20,7 +20,14 @@ class EnsurePasswordChanged
             return $next($request);
         }
 
-        if ($request->routeIs('logout', 'profile.edit', 'profile.update')) {
+        if ($request->routeIs(
+            'logout',
+            'profile.edit',
+            'profile.update',
+            'profile.two-factor.setup',
+            'profile.two-factor.confirm',
+            'profile.two-factor.disable'
+        )) {
             return $next($request);
         }
 
