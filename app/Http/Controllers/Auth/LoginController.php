@@ -2,10 +2,13 @@
 
 namespace App\Http\Controllers\Auth;
 
-use App\Models\User;
 use App\Http\Controllers\Controller;
+use App\Models\User;
+use App\Services\LoginOtpService;
 use Illuminate\Foundation\Auth\AuthenticatesUsers;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 
 class LoginController extends Controller
 {
@@ -19,10 +22,68 @@ class LoginController extends Controller
     /** Lockout duration in minutes. */
     protected $decayMinutes = 10;
 
-    public function __construct()
-    {
+    public function __construct(
+        private readonly LoginOtpService $loginOtp
+    ) {
         $this->middleware('guest')->except('logout');
         $this->middleware('auth')->only('logout');
+    }
+
+    public function login(Request $request)
+    {
+        $this->validateLogin($request);
+
+        if (method_exists($this, 'hasTooManyLoginAttempts') &&
+            $this->hasTooManyLoginAttempts($request)) {
+            $this->fireLockoutEvent($request);
+
+            return $this->sendLockoutResponse($request);
+        }
+
+        $credentials = $this->credentials($request);
+        $user = User::query()->where('email', $credentials['email'])->first();
+
+        if (! $user || ! Hash::check($credentials['password'], $user->password)) {
+            $this->incrementLoginAttempts($request);
+
+            return $this->sendFailedLoginResponse($request);
+        }
+
+        if ($this->loginOtp->requiresOtp($user)) {
+            $phone = $this->loginOtp->resolvePhoneForUser($user);
+            if ($phone === null) {
+                return back()->withErrors([
+                    'login' => 'Employee record par mobile number nahi hai. Admin se phone number add karwaein.',
+                ])->withInput($request->only('login', 'remember'));
+            }
+
+            try {
+                $challenge = $this->loginOtp->startChallenge(
+                    $user,
+                    $request->boolean('remember'),
+                    $phone
+                );
+            } catch (\Throwable $e) {
+                report($e);
+
+                return back()->withErrors([
+                    'login' => 'OTP bhejne mein masla aaya. Settings → Login OTP mein SMS/WhatsApp API check karein.',
+                ])->withInput($request->only('login', 'remember'));
+            }
+
+            $request->session()->put('login_otp_token', $challenge['token']);
+            $request->session()->put('otp_phone_masked', $challenge['masked_phone']);
+            $this->clearLoginAttempts($request);
+
+            return redirect()->route('login.verify-otp');
+        }
+
+        Auth::login($user, $request->boolean('remember'));
+        $request->session()->regenerate();
+        $this->clearLoginAttempts($request);
+        $this->authenticated($request, $user);
+
+        return redirect()->intended($this->redirectPath());
     }
 
     /**

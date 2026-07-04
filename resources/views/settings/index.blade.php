@@ -628,6 +628,70 @@
             </div>
         </div>
 
+        <div class="card shadow-sm mt-4 border-warning border-opacity-25">
+            <div class="card-header bg-white fw-semibold">
+                <i class="bi bi-shield-lock me-1"></i> Login OTP (SMS / WhatsApp)
+            </div>
+            <div class="card-body">
+                <div class="form-check form-switch mb-3">
+                    <input type="hidden" name="otp_login_enabled" value="0">
+                    <input class="form-check-input" type="checkbox" name="otp_login_enabled" value="1" id="otp_login_enabled"
+                           @checked(old('otp_login_enabled', ($settings['otp_login_enabled'] ?? '1')) === '1')>
+                    <label class="form-check-label fw-semibold" for="otp_login_enabled">Login par OTP zaroori ho (recommended)</label>
+                </div>
+                <p class="small text-secondary mb-3">Jab ON ho, employee login par password ke baad mobile/WhatsApp par 6-digit OTP jayega.</p>
+
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label">OTP channel</label>
+                        @php $otpChannel = old('otp_channel', $settings['otp_channel'] ?? 'both'); @endphp
+                        <select name="otp_channel" class="form-select">
+                            <option value="both" @selected($otpChannel === 'both')>WhatsApp + SMS (pehle WhatsApp, phir SMS)</option>
+                            <option value="whatsapp" @selected($otpChannel === 'whatsapp')>Sirf WhatsApp</option>
+                            <option value="sms" @selected($otpChannel === 'sms')>Sirf SMS</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">SMS method</label>
+                        <select name="otp_sms_method" class="form-select">
+                            <option value="post" @selected(old('otp_sms_method', $settings['otp_sms_method'] ?? 'post') === 'post')>POST</option>
+                            <option value="get" @selected(old('otp_sms_method', $settings['otp_sms_method'] ?? 'post') === 'get')>GET</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">SMS sender ID</label>
+                        <input type="text" name="otp_sms_sender" class="form-control"
+                               value="{{ old('otp_sms_sender', $settings['otp_sms_sender'] ?? '') }}"
+                               placeholder="Optional">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">WhatsApp API token</label>
+                        <input type="password" name="otp_whatsapp_token" class="form-control" autocomplete="off"
+                               value="{{ old('otp_whatsapp_token', $settings['otp_whatsapp_token'] ?? '') }}"
+                               placeholder="Meta Cloud API access token">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">WhatsApp Phone Number ID</label>
+                        <input type="text" name="otp_whatsapp_phone_id" class="form-control"
+                               value="{{ old('otp_whatsapp_phone_id', $settings['otp_whatsapp_phone_id'] ?? '') }}"
+                               placeholder="e.g. 123456789012345">
+                    </div>
+                    <div class="col-md-8">
+                        <label class="form-label">SMS API URL</label>
+                        <input type="text" name="otp_sms_api_url" class="form-control"
+                               value="{{ old('otp_sms_api_url', $settings['otp_sms_api_url'] ?? '') }}"
+                               placeholder="https://api.example.com/send?to={phone}&message={message}&api_key={api_key}">
+                        <div class="form-text">Placeholders: <code>{phone}</code>, <code>{message}</code>, <code>{api_key}</code>, <code>{sender}</code></div>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">SMS API key</label>
+                        <input type="password" name="otp_sms_api_key" class="form-control" autocomplete="off"
+                               value="{{ old('otp_sms_api_key', $settings['otp_sms_api_key'] ?? '') }}">
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="card shadow-sm mt-4">
             <div class="card-header bg-white fw-semibold">Database Information</div>
             <div class="card-body">

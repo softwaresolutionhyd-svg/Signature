@@ -48,6 +48,7 @@ use App\Http\Controllers\ManualSystemUpdateController;
 use App\Http\Controllers\DatabaseBackupController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Auth\PasswordResetRequestController as GuestPasswordResetRequestController;
+use App\Http\Controllers\Auth\OtpVerificationController;
 use App\Http\Controllers\Admin\PasswordResetRequestController as AdminPasswordResetRequestController;
 use App\Http\Controllers\SyncStatusController;
 
@@ -71,6 +72,9 @@ Route::get('/', function () {
 Auth::routes(['register' => false, 'reset' => false]);
 
 Route::middleware('guest')->group(function () {
+    Route::get('/login/verify-otp', [OtpVerificationController::class, 'show'])->name('login.verify-otp');
+    Route::post('/login/verify-otp', [OtpVerificationController::class, 'verify'])->name('login.verify-otp.submit');
+    Route::post('/login/resend-otp', [OtpVerificationController::class, 'resend'])->name('login.resend-otp');
     Route::get('/request-password-reset', [GuestPasswordResetRequestController::class, 'create'])->name('password-reset-request.create');
     Route::post('/request-password-reset', [GuestPasswordResetRequestController::class, 'store'])->name('password-reset-request.store');
 });

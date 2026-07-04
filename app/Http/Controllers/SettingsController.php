@@ -63,6 +63,14 @@ class SettingsController extends Controller
         'expenses_require_receipt_on_submit'=> '0',
         'employees_per_page'                => '20',
         'employees_ref_per_page'            => '20',
+        'otp_login_enabled'                 => '1',
+        'otp_channel'                       => 'both',
+        'otp_whatsapp_token'                => '',
+        'otp_whatsapp_phone_id'             => '',
+        'otp_sms_api_url'                   => '',
+        'otp_sms_api_key'                   => '',
+        'otp_sms_sender'                    => '',
+        'otp_sms_method'                    => 'post',
         'product_extra_cost_fields'         => '[{"key":"gas_charges","label":"Gas charges","rate":20,"operator":"plus","base":"cost","target":"effective_cost"}]',
     ];
 
@@ -112,6 +120,13 @@ class SettingsController extends Controller
             'expenses_categories_per_page' => ['required', 'integer', 'min:5', 'max:100'],
             'employees_per_page' => ['required', 'integer', 'min:5', 'max:100'],
             'employees_ref_per_page' => ['required', 'integer', 'min:5', 'max:100'],
+            'otp_channel' => ['required', 'in:sms,whatsapp,both'],
+            'otp_whatsapp_token' => ['nullable', 'string', 'max:500'],
+            'otp_whatsapp_phone_id' => ['nullable', 'string', 'max:120'],
+            'otp_sms_api_url' => ['nullable', 'string', 'max:500'],
+            'otp_sms_api_key' => ['nullable', 'string', 'max:500'],
+            'otp_sms_sender' => ['nullable', 'string', 'max:60'],
+            'otp_sms_method' => ['required', 'in:get,post'],
             'product_extra_cost_fields' => ['nullable', 'array', 'max:20'],
             'product_extra_cost_fields.*.label' => ['nullable', 'string', 'max:60'],
             'product_extra_cost_fields.*.rate' => ['nullable', 'numeric', 'min:0', 'max:999999'],
@@ -136,6 +151,7 @@ class SettingsController extends Controller
             'pos_enable_tables',
             'inventory_show_low_stock_banner',
             'expenses_require_receipt_on_submit',
+            'otp_login_enabled',
         ] as $boolKey) {
             $data[$boolKey] = $request->boolean($boolKey) ? '1' : '0';
         }
