@@ -23,6 +23,7 @@ class EventServiceProvider extends ServiceProvider
         ],
         Login::class => [
             LogUserLogin::class,
+            \App\Listeners\HandleAuth0Login::class,
         ],
         Logout::class => [
             LogUserLogout::class,

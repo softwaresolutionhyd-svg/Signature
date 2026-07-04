@@ -48,6 +48,7 @@ use App\Http\Controllers\ManualSystemUpdateController;
 use App\Http\Controllers\DatabaseBackupController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Auth\PasswordResetRequestController as GuestPasswordResetRequestController;
+use App\Http\Controllers\Auth\LogoutController;
 use App\Http\Controllers\Auth\OtpVerificationController;
 use App\Http\Controllers\Admin\PasswordResetRequestController as AdminPasswordResetRequestController;
 use App\Http\Controllers\SyncStatusController;
@@ -69,7 +70,17 @@ Route::get('/', function () {
         : redirect()->route('login');
 });
 
-Auth::routes(['register' => false, 'reset' => false]);
+if (auth0_enabled()) {
+    Route::get('/login', [App\Http\Controllers\Auth\LoginController::class, 'showLoginForm'])
+        ->middleware('guest')
+        ->name('login');
+
+    Route::match(['get', 'post'], '/logout', LogoutController::class)
+        ->middleware('auth')
+        ->name('logout');
+} else {
+    Auth::routes(['register' => false, 'reset' => false]);
+}
 
 Route::middleware('guest')->group(function () {
     Route::get('/login/verify-otp', [OtpVerificationController::class, 'show'])->name('login.verify-otp');

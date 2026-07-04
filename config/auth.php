@@ -14,7 +14,7 @@ return [
     */
 
     'defaults' => [
-        'guard' => 'web',
+        'guard' => filter_var(env('AUTH0_ENABLED', false), FILTER_VALIDATE_BOOL) ? 'auth0-session' : 'web',
         'passwords' => 'users',
     ],
 
@@ -40,6 +40,11 @@ return [
             'driver' => 'session',
             'provider' => 'users',
         ],
+
+        'auth0-session' => [
+            'driver' => 'auth0.session',
+            'provider' => 'auth0-provider',
+        ],
     ],
 
     /*
@@ -63,6 +68,11 @@ return [
         'users' => [
             'driver' => 'eloquent',
             'model' => App\Models\User::class,
+        ],
+
+        'auth0-provider' => [
+            'driver' => 'auth0.provider',
+            'repository' => App\Repositories\Auth0UserRepository::class,
         ],
 
         // 'users' => [

@@ -29,8 +29,16 @@ class LoginController extends Controller
         $this->middleware('auth')->only('logout');
     }
 
+    public function showLoginForm()
+    {
+        return view('auth.login');
+    }
+
     public function login(Request $request)
     {
+        if (auth0_enabled()) {
+            return redirect('/auth0/login');
+        }
         $this->validateLogin($request);
 
         if (method_exists($this, 'hasTooManyLoginAttempts') &&
