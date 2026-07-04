@@ -14,18 +14,34 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Validate FTP secrets
+        run: |
+          if [ -z "${{ secrets.FTP_SERVER }}" ]; then
+            echo "::error::FTP_SERVER secret missing. Add it in repo Settings → Secrets → Actions"
+            exit 1
+          fi
+          if [ -z "${{ secrets.FTP_USERNAME }}" ]; then
+            echo "::error::FTP_USERNAME secret missing"
+            exit 1
+          fi
+          if [ -z "${{ secrets.FTP_PASSWORD }}" ]; then
+            echo "::error::FTP_PASSWORD secret missing"
+            exit 1
+          fi
+
       - name: Deploy via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
           server: ${{ secrets.FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
-          server-dir: ${{ secrets.FTP_SERVER_DIR }}
+          server-dir: ./
           exclude: |
             **/.git*
             **/.github/**
             **/node_modules/**
             **/tests/**
+            **/*.zip
             .env
             .env.*
             !.env.example
