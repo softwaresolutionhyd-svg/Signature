@@ -280,14 +280,14 @@ function mobile_app_url(): ?string
     return $urls[0] ?? null;
 }
 
-/** Whether Auth0 secure login is active (requires SDK + env credentials). */
+/** Whether Auth0 secure login is active (requires SDK + credentials in config). */
 function auth0_enabled(): bool
 {
-    if (! filter_var(env('AUTH0_ENABLED', false), FILTER_VALIDATE_BOOL)) {
+    if (! filter_var(config('auth0.enabled', false), FILTER_VALIDATE_BOOL)) {
         return false;
     }
 
-    return filled(env('AUTH0_DOMAIN'))
-        && filled(env('AUTH0_CLIENT_ID'))
-        && filled(env('AUTH0_CLIENT_SECRET'));
+    return filled(config('auth0.domain'))
+        && filled(config('auth0.client_id'))
+        && filled(config('auth0.client_secret'));
 }
