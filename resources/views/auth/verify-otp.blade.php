@@ -18,7 +18,7 @@
                 </p>
             </div>
 
-            <p class="auth-heading">Apne mobile / WhatsApp par aaya hua 6-digit code enter karein</p>
+            <p class="auth-heading">Apne mobile par aaya hua 6-digit SMS code enter karein</p>
 
             @if (session('status'))
                 <div class="alert alert-success small py-2">{{ session('status') }}</div>

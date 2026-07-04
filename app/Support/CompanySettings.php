@@ -24,31 +24,4 @@ class CompanySettings
     {
         return (string) self::get($companyId, 'otp_login_enabled', '1') === '1';
     }
-
-    public static function otpChannel(?int $companyId): string
-    {
-        $channel = (string) self::get($companyId, 'otp_channel', 'both');
-
-        return in_array($channel, ['sms', 'whatsapp', 'both'], true) ? $channel : 'both';
-    }
-
-    public static function otpWhatsAppProvider(?int $companyId): string
-    {
-        $provider = (string) self::get($companyId, 'otp_whatsapp_provider', 'meta');
-
-        return in_array($provider, ['meta', 'callmebot'], true) ? $provider : 'meta';
-    }
-
-    public static function usesCallMeBot(?int $companyId): bool
-    {
-        if ($companyId === null) {
-            return false;
-        }
-
-        if (self::otpWhatsAppProvider($companyId) !== 'callmebot') {
-            return false;
-        }
-
-        return in_array(self::otpChannel($companyId), ['whatsapp', 'both'], true);
-    }
 }
