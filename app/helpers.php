@@ -279,28 +279,3 @@ function mobile_app_url(): ?string
 
     return $urls[0] ?? null;
 }
-
-/** Whether Auth0 secure login is active (requires SDK + credentials in config). */
-function auth0_enabled(): bool
-{
-    return filter_var(config('auth0.enabled', false), FILTER_VALIDATE_BOOL)
-        && filled(config('auth0.domain'))
-        && filled(config('auth0.client_id'))
-        && filled(config('auth0.client_secret'));
-}
-
-/** Cookie secret for Auth0 SDK session (minimum 32 bytes). */
-function auth0_cookie_secret(): string
-{
-    $configured = trim((string) config('auth0.cookie_secret', ''));
-    if ($configured !== '' && strlen($configured) >= 32) {
-        return $configured;
-    }
-
-    $appKey = (string) config('app.key', '');
-    if (strlen($appKey) >= 32) {
-        return $appKey;
-    }
-
-    return hash('sha256', $appKey !== '' ? $appKey : (string) config('app.name', 'signature'));
-}
