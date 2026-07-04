@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use App\Support\ModuleAccess;
+use Illuminate\Database\Eloquent\Casts\AsEncryptedArrayObject;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -56,7 +56,7 @@ class User extends Authenticatable
         'permissions' => 'array',
         'must_change_password' => 'boolean',
         'two_factor_secret' => 'encrypted',
-        'two_factor_recovery_codes' => 'encrypted:array',
+        'two_factor_recovery_codes' => AsEncryptedArrayObject::class,
         'two_factor_confirmed_at' => 'datetime',
     ];
 
