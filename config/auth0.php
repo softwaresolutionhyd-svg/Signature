@@ -5,14 +5,17 @@ declare(strict_types=1);
 use Auth0\Laravel\Configuration;
 use Auth0\SDK\Configuration\SdkConfiguration;
 
+$domain = (string) env('AUTH0_DOMAIN', '');
+$domain = preg_replace('#^https?://#i', '', rtrim($domain, '/'));
+
 $enabled = filter_var(env('AUTH0_ENABLED', false), FILTER_VALIDATE_BOOL)
-    && filled(env('AUTH0_DOMAIN'))
+    && filled($domain)
     && filled(env('AUTH0_CLIENT_ID'))
     && filled(env('AUTH0_CLIENT_SECRET'));
 
 return Configuration::VERSION_2 + [
     'enabled' => $enabled,
-    'domain' => env('AUTH0_DOMAIN'),
+    'domain' => $domain,
     'client_id' => env('AUTH0_CLIENT_ID'),
     'client_secret' => env('AUTH0_CLIENT_SECRET'),
     'redirect_uri' => env('AUTH0_REDIRECT_URI', rtrim((string) env('APP_URL', ''), '/').'/callback'),
@@ -25,10 +28,10 @@ return Configuration::VERSION_2 + [
     'guards' => [
         'default' => [
             Configuration::CONFIG_STRATEGY => Configuration::get(Configuration::CONFIG_STRATEGY, SdkConfiguration::STRATEGY_NONE),
-            Configuration::CONFIG_DOMAIN => Configuration::get(Configuration::CONFIG_DOMAIN),
+            Configuration::CONFIG_DOMAIN => $domain ?: Configuration::get(Configuration::CONFIG_DOMAIN),
             Configuration::CONFIG_CUSTOM_DOMAIN => Configuration::get(Configuration::CONFIG_CUSTOM_DOMAIN),
-            Configuration::CONFIG_CLIENT_ID => Configuration::get(Configuration::CONFIG_CLIENT_ID),
-            Configuration::CONFIG_CLIENT_SECRET => Configuration::get(Configuration::CONFIG_CLIENT_SECRET),
+            Configuration::CONFIG_CLIENT_ID => env('AUTH0_CLIENT_ID') ?: Configuration::get(Configuration::CONFIG_CLIENT_ID),
+            Configuration::CONFIG_CLIENT_SECRET => env('AUTH0_CLIENT_SECRET') ?: Configuration::get(Configuration::CONFIG_CLIENT_SECRET),
             Configuration::CONFIG_AUDIENCE => Configuration::get(Configuration::CONFIG_AUDIENCE),
             Configuration::CONFIG_ORGANIZATION => Configuration::get(Configuration::CONFIG_ORGANIZATION),
             Configuration::CONFIG_USE_PKCE => Configuration::get(Configuration::CONFIG_USE_PKCE),
