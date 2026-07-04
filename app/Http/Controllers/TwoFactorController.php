@@ -28,7 +28,10 @@ class TwoFactorController extends Controller
         }
 
         try {
-            $secret = $this->totp->generateSecret();
+            $existingSecret = (string) $request->session()->get('two_factor_pending_secret', '');
+            $shouldReuse = $existingSecret !== '' && ! $request->boolean('reset');
+            $secret = $shouldReuse ? $existingSecret : $this->totp->generateSecret();
+            $request->session()->put('two_factor_pending_secret', $secret);
         } catch (Throwable $e) {
             report($e);
 
@@ -37,12 +40,17 @@ class TwoFactorController extends Controller
             ]);
         }
 
-        $request->session()->put('two_factor_pending_secret', $secret);
-
         return view('profile.two-factor-setup', [
             'secret' => $secret,
             'qrCodeSvg' => $this->totp->getQrCodeSvg($user, $secret),
         ]);
+    }
+
+    public function resetSetup(Request $request)
+    {
+        $request->session()->forget('two_factor_pending_secret');
+
+        return redirect()->route('profile.two-factor.setup', ['reset' => 1]);
     }
 
     public function confirm(Request $request)

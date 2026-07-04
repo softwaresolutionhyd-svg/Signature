@@ -14,6 +14,9 @@ class TotpService
 {
     private const RECOVERY_CODE_COUNT = 8;
 
+    /** Allow +/- 2 minutes for server/phone clock drift. */
+    private const VERIFY_WINDOW = 4;
+
     public function __construct(
         private readonly Google2FA $google2fa
     ) {}
@@ -41,13 +44,14 @@ class TotpService
 
     public function verifyKey(string $secret, string $code): bool
     {
+        $secret = strtoupper(trim($secret));
         $code = preg_replace('/\s+/', '', $code) ?? '';
 
         if (! preg_match('/^\d{6}$/', $code)) {
             return false;
         }
 
-        return (bool) $this->google2fa->verifyKey($secret, $code, 1);
+        return (bool) $this->google2fa->verifyKey($secret, $code, self::VERIFY_WINDOW);
     }
 
     public function verifyForUser(User $user, string $code): bool
@@ -74,7 +78,8 @@ class TotpService
     public function verifyRecoveryCode(User $user, string $code): bool
     {
         $normalized = Str::upper(preg_replace('/\s+/', '', $code) ?? '');
-        $codes = (array) ($user->two_factor_recovery_codes ?? []);
+        $raw = $user->two_factor_recovery_codes ?? [];
+        $codes = $raw instanceof \ArrayObject ? $raw->getArrayCopy() : (array) $raw;
 
         $index = array_search($normalized, array_map(
             fn ($stored) => Str::upper(preg_replace('/\s+/', '', (string) $stored) ?? ''),
