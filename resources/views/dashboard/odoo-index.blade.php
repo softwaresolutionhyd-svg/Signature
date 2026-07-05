@@ -37,7 +37,7 @@
         <div class="odoo-card-body">
             <div class="row g-3">
                 <div class="col-md-3">
-                    <a href="{{ route('pos.index') }}" class="btn btn-primary w-100">
+                    <a href="{{ route('restaurant-pos.index') }}" class="btn btn-primary w-100">
                         <i class="bi bi-cash-stack me-2"></i> New Sale
                     </a>
                 </div>
@@ -75,11 +75,11 @@
                     <div class="odoo-app-desc">Business overview and analytics</div>
                 </a>
 
-                <a href="{{ route('pos.index') }}" class="odoo-app-card">
+                <a href="{{ route('restaurant-pos.index') }}" class="odoo-app-card">
                     <div class="odoo-app-icon" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
                         <i class="bi bi-shop"></i>
                     </div>
-                    <div class="odoo-app-title">Point of Sale</div>
+                    <div class="odoo-app-title">Restaurant POS</div>
                     <div class="odoo-app-desc">Manage sales and transactions</div>
                 </a>
 

@@ -34,7 +34,7 @@ class EnsureUserHasModuleAccess
         // POS customer picker: contacts search/create without full Contacts module
         if (($routeName === 'contacts.search' && in_array($method, ['GET', 'HEAD'], true))
             || ($routeName === 'contacts.store' && $method === 'POST')) {
-            if ($user instanceof User && ($user->touchesModule('pos') || $user->touchesModule('restaurant-pos'))) {
+            if ($user instanceof User && $user->touchesModule('restaurant-pos')) {
                 return $next($request);
             }
         }
@@ -124,7 +124,7 @@ class EnsureUserHasModuleAccess
             return 'edit';
         }
 
-        if (Str::startsWith($routeName, 'pos.') || Str::startsWith($routeName, 'restaurant-pos.')) {
+        if (Str::startsWith($routeName, 'restaurant-pos.')) {
             if (Str::endsWith($routeName, '.checkout') || Str::endsWith($routeName, '.hold')) {
                 return 'create';
             }

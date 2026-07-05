@@ -49,11 +49,6 @@ class PosController extends Controller
         private readonly AutoJournalService $autoJournal,
     ) {}
 
-    public function index(Request $request): View
-    {
-        return view('pos.index', $this->posIndexViewData($request));
-    }
-
     public function restaurant(Request $request): View
     {
         return view('pos.restaurant', $this->posIndexViewData($request));
@@ -445,7 +440,7 @@ class PosController extends Controller
     {
         $this->ensureOpenSessionForUser(Auth::user());
 
-        return redirect()->route('pos.index')->with('success', 'POS ready.');
+        return redirect()->route('restaurant-pos.index')->with('success', 'POS ready.');
     }
 
     public function closeSession(PosCloseSessionRequest $request): RedirectResponse
@@ -471,7 +466,7 @@ class PosController extends Controller
 
         $this->finalizeSessionClose($session, $request->note);
 
-        return redirect()->route('pos.index')->with('success', 'Aaj ki daily closing save ho gayi.');
+        return redirect()->route('restaurant-pos.index')->with('success', 'Aaj ki daily closing save ho gayi.');
     }
 
     private function finalizeSessionClose(PosSession $session, ?string $note = null): void
@@ -818,17 +813,17 @@ class PosController extends Controller
 
         if ($customerType === 'mess_use' && ! $isCredit) {
             if ($openReceipt) {
-                return redirect()->route('pos.receipt', $order)->with('success', $msg);
+                return redirect()->route('restaurant-pos.receipt', $order)->with('success', $msg);
             }
 
-            return redirect()->route('pos.index')->with('success', $msg)->with('last_pos_order_id', $order->id)->with('pos_active_tab', 'paid');
+            return redirect()->route('restaurant-pos.index')->with('success', $msg)->with('last_pos_order_id', $order->id)->with('pos_active_tab', 'paid');
         }
 
         if ($openReceipt) {
-            return redirect()->route('pos.receipt', $order)->with('success', $msg);
+            return redirect()->route('restaurant-pos.receipt', $order)->with('success', $msg);
         }
 
-        return redirect()->route('pos.index')->with('success', $msg)->with('last_pos_order_id', $order->id)->with('pos_active_tab', 'paid');
+        return redirect()->route('restaurant-pos.index')->with('success', $msg)->with('last_pos_order_id', $order->id)->with('pos_active_tab', 'paid');
     }
 
     public function hold(PosCheckoutRequest $request): RedirectResponse|JsonResponse
@@ -1056,7 +1051,7 @@ class PosController extends Controller
             abort(403);
         }
 
-        $uiRoute = $request->query('ui') === 'restaurant' ? 'restaurant-pos.index' : 'pos.index';
+        $uiRoute = 'restaurant-pos.index';
 
         if ($order->isReadyForPosPickup()) {
             $session = $this->ensureOpenSessionForUser(Auth::user());
@@ -1186,8 +1181,8 @@ class PosController extends Controller
 
         $autoPrint = Setting::get('pos_auto_print_receipt', '1') === '1' && !$request->boolean('noprint', false);
         $allowBillPrint = (($settings['pos_allow_bill_print'] ?? '1') === '1');
-        $backUrl = route('pos.index');
-        $backLabel = '← Back to POS';
+        $backUrl = route('restaurant-pos.index');
+        $backLabel = '← Back to Restaurant POS';
 
         return view('pos.receipt', compact('order', 'settings', 'autoPrint', 'allowBillPrint', 'backUrl', 'backLabel'));
     }

@@ -102,9 +102,6 @@
                 <i class="bi bi-check-circle"></i> Paid
                 <span class="badge rp-badge-count rp-badge-paid" id="rpPaidCount">{{ $paidOrders->count() }}</span>
             </button>
-            <a href="{{ route('pos.index') }}" class="btn btn-sm btn-outline-secondary rp-link-cafe">
-                <i class="bi bi-shop"></i> POS Restaurant
-            </a>
             <a href="{{ route('dashboard') }}" class="btn btn-sm btn-outline-secondary rp-link-exit" title="Dashboard">
                 <i class="bi bi-box-arrow-left"></i>
             </a>

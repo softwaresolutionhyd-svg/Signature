@@ -8,7 +8,6 @@ final class ModuleAccess
     public const DEFINITIONS = [
         'inventory' => 'Inventory',
         'purchase' => 'Purchase',
-        'pos' => 'POS Restaurant',
         'restaurant-pos' => 'Restaurant POS',
         'order-taker' => 'Order Taker',
         'kitchen' => 'Kitchen',
@@ -29,6 +28,9 @@ final class ModuleAccess
     /** Legacy permission keys merged when checking HR access. */
     private const HR_PERMISSION_ALIASES = ['hr', 'employees'];
 
+    /** Legacy POS Restaurant permissions count as Restaurant POS. */
+    private const RESTAURANT_POS_PERMISSION_ALIASES = ['restaurant-pos', 'pos'];
+
     /**
      * @return list<string>
      */
@@ -42,6 +44,7 @@ final class ModuleAccess
     {
         return match ($routeModule) {
             'employees' => 'hr',
+            'pos' => 'restaurant-pos',
             default => $routeModule,
         };
     }
@@ -57,6 +60,10 @@ final class ModuleAccess
             return self::HR_PERMISSION_ALIASES;
         }
 
+        if ($module === 'restaurant-pos') {
+            return self::RESTAURANT_POS_PERMISSION_ALIASES;
+        }
+
         return [$module];
     }
 
@@ -70,6 +77,11 @@ final class ModuleAccess
         // Migrate legacy employees permissions into hr when saving new users.
         if (! isset($merged['hr']) && isset($merged['employees'])) {
             $merged['hr'] = $merged['employees'];
+        }
+
+        // Migrate legacy POS Restaurant permissions into Restaurant POS.
+        if (! isset($merged['restaurant-pos']) && isset($merged['pos'])) {
+            $merged['restaurant-pos'] = $merged['pos'];
         }
 
         $out = [];

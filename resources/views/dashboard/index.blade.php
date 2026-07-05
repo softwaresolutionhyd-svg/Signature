@@ -44,19 +44,6 @@
         </a>
         @endif
 
-        @if($u->canViewModule('pos'))
-        <a class="odoo-app" href="{{ route('pos.index') }}">
-            <div class="odoo-icon" style="--icon-color:#f97316;">
-                <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <rect x="5" y="8" width="30" height="20" rx="3" stroke="currentColor" stroke-width="2.5"/>
-                    <path d="M5 28h30l-3 6H8l-3-6z" fill="currentColor" opacity="0.7"/>
-                    <path d="M14 18h12M20 14v8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                </svg>
-            </div>
-            <span class="odoo-label">POS Restaurant</span>
-        </a>
-        @endif
-
         @if($u->canViewModule('restaurant-pos'))
         <a class="odoo-app" href="{{ route('restaurant-pos.index') }}">
             <div class="odoo-icon" style="--icon-color:#0d9488;">

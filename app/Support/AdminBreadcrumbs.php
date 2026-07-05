@@ -47,7 +47,6 @@ final class AdminBreadcrumbs
             str_starts_with($name, 'maintenance.') => [$dash, ['label' => 'Maintenance', 'url' => null]],
             str_starts_with($name, 'custom-forms.') => [$dash, ['label' => 'Custom Forms', 'url' => null]],
             str_starts_with($name, 'purchase.') => self::purchase($name, $dash),
-            str_starts_with($name, 'pos.') => self::pos($name, $dash),
             str_starts_with($name, 'restaurant-pos.') => [$dash, ['label' => 'Restaurant POS', 'url' => $name === 'restaurant-pos.index' ? null : route('restaurant-pos.index')]],
             str_starts_with($name, 'order-taker.') => [$dash, ['label' => 'Order Taker', 'url' => $name === 'order-taker.index' ? null : route('order-taker.index')]],
             str_starts_with($name, 'kitchen.') => [$dash, ['label' => 'Kitchen', 'url' => $name === 'kitchen.index' ? null : route('kitchen.index')]],
@@ -195,24 +194,6 @@ final class AdminBreadcrumbs
             } else {
                 self::appendCrudTail($out, $name);
             }
-        }
-
-        return $out;
-    }
-
-    /**
-     * @param  array{label: string, url: ?string}  $dash
-     * @return list<array{label: string, url: ?string}>
-     */
-    private static function pos(string $name, array $dash): array
-    {
-        $onPosHome = $name === 'pos.index';
-        $out = [$dash, ['label' => 'POS Restaurant', 'url' => $onPosHome ? null : route('pos.index')]];
-        if ($name === 'pos.resume') {
-            $out[] = ['label' => 'Resume sale', 'url' => null];
-        }
-        if ($name === 'pos.receipt') {
-            $out[] = ['label' => 'Receipt', 'url' => null];
         }
 
         return $out;

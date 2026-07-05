@@ -282,8 +282,8 @@
                 <a href="{{ route('dashboard') }}" class="hybrid-nav-item {{ request()->routeIs('dashboard') ? 'active' : '' }}">
                     <i class="bi bi-speedometer2"></i> Dashboard
                 </a>
-                <a href="{{ route('pos.index') }}" class="hybrid-nav-item {{ request()->routeIs('pos.*') ? 'active' : '' }}">
-                    <i class="bi bi-shop"></i> Point of Sale
+                <a href="{{ route('restaurant-pos.index') }}" class="hybrid-nav-item {{ request()->routeIs('restaurant-pos.*') ? 'active' : '' }}">
+                    <i class="bi bi-shop"></i> Restaurant POS
                 </a>
                 <a href="{{ route('inventory.index') }}" class="hybrid-nav-item {{ request()->routeIs('inventory.*') ? 'active' : '' }}">
                     <i class="bi bi-box-seam"></i> Inventory

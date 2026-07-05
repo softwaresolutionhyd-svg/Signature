@@ -51,7 +51,7 @@ class PosCheckoutRequest extends FormRequest
      */
     public function rules(): array
     {
-        $isHold = $this->routeIs('pos.hold');
+        $isHold = $this->routeIs('restaurant-pos.hold');
         $isCredit = $this->boolean('is_credit');
 
         $paymentsRule = $isHold
@@ -74,12 +74,12 @@ class PosCheckoutRequest extends FormRequest
             'staff_include_gas' => ['nullable', 'boolean'],
             'is_credit' => ['nullable', 'boolean'],
             'contact_id' => [
-                Rule::requiredIf(fn () => $this->boolean('is_credit') || ($this->input('customer_type') === 'ast_offr' && ! $this->routeIs('pos.hold'))),
+                Rule::requiredIf(fn () => $this->boolean('is_credit') || ($this->input('customer_type') === 'ast_offr' && ! $this->routeIs('restaurant-pos.hold'))),
                 'nullable',
                 'integer',
                 'exists:tenant.contacts,id',
             ],
-            'guest_name' => [Rule::requiredIf(fn () => $this->input('customer_type') === 'mess_use' || ($this->input('customer_type') === 'ast_offr' && $this->routeIs('pos.hold'))), 'nullable', 'string', 'max:120'],
+            'guest_name' => [Rule::requiredIf(fn () => $this->input('customer_type') === 'mess_use' || ($this->input('customer_type') === 'ast_offr' && $this->routeIs('restaurant-pos.hold'))), 'nullable', 'string', 'max:120'],
             'room_no' => [Rule::requiredIf(fn () => $this->input('customer_type') === 'booking'), 'nullable', 'string', 'max:50'],
             'waiter_name' => [Rule::requiredIf(fn () => $this->input('customer_type') === 'mess_use'), 'nullable', 'string', 'max:120'],
             'order_notes' => ['nullable', 'string', 'max:1000'],

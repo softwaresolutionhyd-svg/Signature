@@ -34,11 +34,11 @@
         </a>
 
         <!-- Point of Sale -->
-        <a href="{{ route('pos.index') }}" class="odoo-app-card">
+        <a href="{{ route('restaurant-pos.index') }}" class="odoo-app-card">
             <div class="odoo-app-icon-container app-pos">
                 <i class="bi bi-shop odoo-app-icon"></i>
             </div>
-            <div class="odoo-app-label">Point of Sale</div>
+            <div class="odoo-app-label">Restaurant POS</div>
         </a>
 
         <!-- Employees -->

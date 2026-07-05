@@ -74,7 +74,7 @@ class CheckoutCounterController extends Controller
         }
 
         return redirect()
-            ->route('pos.receipt', $paid)
+            ->route('restaurant-pos.receipt', $paid)
             ->with('success', 'Cafe bill collect ho gayi.');
     }
 

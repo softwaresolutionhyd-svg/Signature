@@ -208,20 +208,9 @@ Route::middleware(['auth', 'employee', 'passwordChanged'])->group(function () {
         });
     });
 
-    Route::prefix('pos')->name('pos.')->group(function () {
-        Route::middleware('moduleAccess')->group(function () {
-        Route::get('/', [PosController::class, 'index'])->name('index');
-        Route::get('/sync', [PosController::class, 'sync'])->name('sync');
-        Route::post('/session/open', [PosController::class, 'openSession'])->name('session.open');
-        Route::post('/session/close', [PosController::class, 'closeSession'])->name('session.close');
-        Route::post('/cash-movement', [PosController::class, 'addCashMovement'])->name('cash-movement');
-        Route::post('/checkout', [PosController::class, 'checkout'])->name('checkout');
-        Route::post('/hold', [PosController::class, 'hold'])->name('hold');
-        Route::delete('/hold/{order}', [PosController::class, 'discardHeld'])->name('hold.discard');
-        Route::get('/resume/{order}', [PosController::class, 'resume'])->name('resume');
-        Route::get('/receipt/{order}', [PosController::class, 'receipt'])->name('receipt');
-        });
-    });
+    Route::redirect('/pos', '/restaurant-pos');
+    Route::redirect('/pos/resume/{order}', '/restaurant-pos/resume/{order}');
+    Route::redirect('/pos/receipt/{order}', '/restaurant-pos/receipt/{order}');
 
     Route::prefix('restaurant-pos')->name('restaurant-pos.')->group(function () {
         Route::middleware('moduleAccess')->group(function () {

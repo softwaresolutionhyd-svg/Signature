@@ -142,7 +142,7 @@
     @endif
 </div>
 <div class="noprint" style="max-width:80mm;margin:12px auto 24px;padding:0 8px;">
-    <a href="{{ $backUrl ?? route('pos.index') }}" style="display:block;text-align:center;text-decoration:none;font-weight:700;padding:14px 16px;border-radius:10px;margin-bottom:10px;background:#0d6efd;color:#fff;font-size:15px;">{{ $backLabel ?? '← Back to POS' }}</a>
+    <a href="{{ $backUrl ?? route('restaurant-pos.index') }}" style="display:block;text-align:center;text-decoration:none;font-weight:700;padding:14px 16px;border-radius:10px;margin-bottom:10px;background:#0d6efd;color:#fff;font-size:15px;">{{ $backLabel ?? '← Back to Restaurant POS' }}</a>
     @if(!empty($allowBillPrint))
         <button type="button" onclick="window.print()" style="display:block;width:100%;padding:10px;font-size:14px;cursor:pointer;border:1px solid #999;border-radius:8px;background:#fff;">Print again</button>
         <p style="font-size:10px;color:#666;text-align:center;margin:10px 0 0;">Same-tab receipt — no pop-up blocker.</p>
