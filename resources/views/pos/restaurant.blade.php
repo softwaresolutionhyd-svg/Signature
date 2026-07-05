@@ -6,7 +6,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="{{ asset('css/restaurant-pos.css') }}?v=28">
+<link rel="stylesheet" href="{{ asset('css/restaurant-pos.css') }}?v=29">
 @endpush
 
 @section('content')
@@ -118,71 +118,62 @@
     <div class="rp-order-zone">
         <div class="rp-order-fields" id="rpOrderFieldsPanel">
             <input type="hidden" id="rpServiceType" value="{{ $defaultServiceType }}">
-            <div class="rp-service-types" id="rpServiceTypes" role="tablist" aria-label="Order type">
-                @foreach(\App\Models\PosOrder::serviceTypeLabels() as $key => $label)
-                    <button type="button"
-                            class="rp-service-type{{ $defaultServiceType === $key ? ' is-active' : '' }}"
-                            data-type="{{ $key }}"
-                            role="tab"
-                            aria-selected="{{ $defaultServiceType === $key ? 'true' : 'false' }}">{{ $label }}</button>
-                @endforeach
-            </div>
-            <div class="rp-service-details row g-2 mt-2 align-items-end" id="rpServiceDetails">
-                <div class="col-12 col-md-auto rp-service-panel d-none" id="rpDineInPanel" data-service="dine_in">
-                    @if($posSettings['enable_tables'] ?? false)
-                        <label class="form-label small mb-1" for="rpTable">Table No.</label>
-                        <select id="rpTable" class="form-select form-select-sm">
-                            <option value="">Select table…</option>
-                            @foreach($tables as $t)
-                                <option value="{{ $t->id }}" @selected(($posSettings['resume_table_id'] ?? null) === (int) $t->id)>{{ $t->name }}</option>
-                            @endforeach
-                        </select>
-                    @else
-                        <label class="form-label small mb-1" for="rpTableNo">Table No.</label>
-                        <input type="text" id="rpTableNo" class="form-control form-control-sm" maxlength="50"
-                               value="{{ old('guest_name', $posSettings['resume_guest_name'] ?? '') }}"
-                               placeholder="e.g. 12">
-                    @endif
+            <div class="rp-order-bar">
+                <div class="rp-service-types" id="rpServiceTypes" role="tablist" aria-label="Order type">
+                    @foreach(\App\Models\PosOrder::serviceTypeLabels() as $key => $label)
+                        <button type="button"
+                                class="rp-service-type{{ $defaultServiceType === $key ? ' is-active' : '' }}"
+                                data-type="{{ $key }}"
+                                role="tab"
+                                aria-selected="{{ $defaultServiceType === $key ? 'true' : 'false' }}">{{ $label }}</button>
+                    @endforeach
                 </div>
-                <div class="col-12 rp-service-panel d-none" id="rpDeliveryPanel" data-service="delivery">
-                    <div class="row g-2">
-                        <div class="col-12 col-md-4">
-                            <label class="form-label small mb-1" for="rpDeliveryName">Customer Name</label>
-                            <input type="text" id="rpDeliveryName" class="form-control form-control-sm" maxlength="120"
-                                   value="{{ old('guest_name', $posSettings['resume_guest_name'] ?? '') }}">
-                        </div>
-                        <div class="col-6 col-md-3">
-                            <label class="form-label small mb-1" for="rpDeliveryPhone">Phone No.</label>
-                            <input type="text" id="rpDeliveryPhone" class="form-control form-control-sm" maxlength="50"
-                                   value="{{ old('room_no', $posSettings['resume_room_no'] ?? '') }}">
-                        </div>
-                        <div class="col-12 col-md-5">
-                            <label class="form-label small mb-1" for="rpDeliveryAddress">Address</label>
-                            <input type="text" id="rpDeliveryAddress" class="form-control form-control-sm" maxlength="1000"
-                                   value="{{ old('order_notes', $posSettings['resume_order_notes'] ?? '') }}"
-                                   placeholder="Delivery address">
-                        </div>
+
+                <div class="rp-order-bar-fields" id="rpServiceDetails">
+                    <div class="rp-service-panel rp-service-panel--inline d-none" id="rpDineInPanel" data-service="dine_in">
+                        @if($posSettings['enable_tables'] ?? false)
+                            <select id="rpTable" class="form-select form-select-sm" aria-label="Table No.">
+                                <option value="">Table…</option>
+                                @foreach($tables as $t)
+                                    <option value="{{ $t->id }}" @selected(($posSettings['resume_table_id'] ?? null) === (int) $t->id)>{{ $t->name }}</option>
+                                @endforeach
+                            </select>
+                        @else
+                            <input type="text" id="rpTableNo" class="form-control form-control-sm" maxlength="50"
+                                   value="{{ old('guest_name', $posSettings['resume_guest_name'] ?? '') }}"
+                                   placeholder="Table No." aria-label="Table No.">
+                        @endif
+                    </div>
+                    <div class="rp-service-panel rp-service-panel--inline rp-service-panel--delivery d-none" id="rpDeliveryPanel" data-service="delivery">
+                        <input type="text" id="rpDeliveryName" class="form-control form-control-sm" maxlength="120"
+                               value="{{ old('guest_name', $posSettings['resume_guest_name'] ?? '') }}"
+                               placeholder="Customer Name" aria-label="Customer Name">
+                        <input type="text" id="rpDeliveryPhone" class="form-control form-control-sm" maxlength="50"
+                               value="{{ old('room_no', $posSettings['resume_room_no'] ?? '') }}"
+                               placeholder="Phone No." aria-label="Phone No.">
+                        <input type="text" id="rpDeliveryAddress" class="form-control form-control-sm rp-field-address" maxlength="1000"
+                               value="{{ old('order_notes', $posSettings['resume_order_notes'] ?? '') }}"
+                               placeholder="Address" aria-label="Address">
                     </div>
                 </div>
-            </div>
-            @if($posSettings['show_customer_section'] ?? true)
-                <div class="rp-credit-row mt-2" id="rpCreditBlock">
-                    <div class="d-flex flex-wrap align-items-center gap-2">
+
+                @if($posSettings['show_customer_section'] ?? true)
+                    <div class="rp-credit-inline" id="rpCreditBlock">
                         <div class="form-check form-switch mb-0">
                             <input class="form-check-input" type="checkbox" id="rpCreditToggle"
                                    @checked(old('is_credit', $posSettings['resume_is_credit'] ?? false))>
-                            <label class="form-check-label small text-danger fw-semibold" for="rpCreditToggle">Credit sale</label>
+                            <label class="form-check-label small text-danger fw-semibold" for="rpCreditToggle">Credit</label>
                         </div>
                         <input type="text" id="rpContactSearch" class="form-control form-control-sm rp-contact-search"
-                               placeholder="Search contact…" autocomplete="off">
-                        <div id="rpSelectedContactWrap" class="d-none small px-2 py-1 rounded border bg-light d-inline-flex align-items-center gap-2">
+                               placeholder="Contact…" autocomplete="off" aria-label="Search contact">
+                        <div id="rpSelectedContactWrap" class="d-none small px-2 py-0 rounded border bg-light d-inline-flex align-items-center gap-1 rp-selected-contact">
                             <span id="rpSelectedContact"></span>
-                            <button type="button" class="btn btn-sm btn-link text-danger p-0" id="rpClearContact" aria-label="Clear contact">×</button>
+                            <button type="button" class="btn btn-sm btn-link text-danger p-0 lh-1" id="rpClearContact" aria-label="Clear contact">×</button>
                         </div>
+                        <div id="rpContactDropdown" class="dropdown-menu show d-none border shadow-sm"></div>
                     </div>
-                    <div id="rpContactDropdown" class="dropdown-menu show d-none border shadow-sm mt-1"></div>
-                </div>
-            @endif
+                @endif
+            </div>
         </div>
 
         <div class="rp-order-line-wrap d-none" id="rpOrderLinePanel">

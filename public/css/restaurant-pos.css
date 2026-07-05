@@ -236,11 +236,21 @@ body.admin-app-body:has(.restaurant-pos-app) .admin-main {
     box-shadow: 0 2px 8px rgba(217, 119, 6, 0.22);
 }
 
+.restaurant-pos-app .rp-order-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    flex-wrap: nowrap;
+    min-height: 2.25rem;
+    overflow-x: auto;
+    scrollbar-width: thin;
+}
+
 .restaurant-pos-app .rp-service-types {
     display: flex;
-    align-items: stretch;
-    gap: 0.55rem;
-    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem;
+    flex: 0 0 auto;
 }
 
 .restaurant-pos-app .rp-service-type {
@@ -248,67 +258,106 @@ body.admin-app-body:has(.restaurant-pos-app) .admin-main {
     background: #fff;
     color: #44403c;
     font-family: var(--rp-font);
-    font-size: 0.95rem;
+    font-size: 0.82rem;
     font-weight: 700;
-    padding: 0.62rem 1.35rem;
-    min-width: 7.5rem;
-    border-radius: 10px;
-    line-height: 1.25;
+    padding: 0.42rem 0.95rem;
+    min-width: 5.5rem;
+    border-radius: 8px;
+    line-height: 1.2;
     cursor: pointer;
-    transition: background 0.15s, border-color 0.15s, color 0.15s, box-shadow 0.15s, transform 0.12s;
+    transition: background 0.15s, border-color 0.15s, color 0.15s, box-shadow 0.15s;
     white-space: nowrap;
     text-align: center;
-    flex: 1 1 0;
-    max-width: 11rem;
+    flex: 0 0 auto;
 }
 
 .restaurant-pos-app .rp-service-type:hover {
     border-color: #d97706;
     color: #92400e;
     background: #fffbeb;
-    transform: translateY(-1px);
 }
 
 .restaurant-pos-app .rp-service-type.is-active {
     background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
     border-color: #d97706;
     color: #fff;
-    box-shadow: 0 4px 14px rgba(217, 119, 6, 0.35);
-    transform: translateY(-1px);
+    box-shadow: 0 3px 10px rgba(217, 119, 6, 0.3);
 }
 
-.restaurant-pos-app .rp-order-fields:has(.rp-service-types) {
-    padding: 0.65rem 0.85rem 0.75rem;
+.restaurant-pos-app .rp-order-bar-fields {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    flex: 1 1 auto;
+    min-width: 0;
 }
 
-.restaurant-pos-app .rp-service-details .form-label {
-    color: #78716c;
-    font-weight: 600;
-    letter-spacing: 0.02em;
-    text-transform: uppercase;
-    font-size: 0.62rem;
+.restaurant-pos-app .rp-service-panel--inline {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    min-width: 0;
 }
 
-.restaurant-pos-app .rp-service-details .form-control,
-.restaurant-pos-app .rp-service-details .form-select {
-    min-width: 8rem;
+.restaurant-pos-app .rp-service-panel--inline.d-none {
+    display: none !important;
 }
 
-.restaurant-pos-app .rp-credit-row {
+.restaurant-pos-app .rp-service-panel--delivery .form-control-sm {
+    min-width: 6.5rem;
+}
+
+.restaurant-pos-app .rp-service-panel--delivery .rp-field-address {
+    flex: 1 1 8rem;
+    min-width: 7rem;
+    max-width: 14rem;
+}
+
+.restaurant-pos-app .rp-order-bar-fields .form-control-sm,
+.restaurant-pos-app .rp-order-bar-fields .form-select-sm {
+    width: auto;
+    min-width: 6.5rem;
+    max-width: 9rem;
+}
+
+.restaurant-pos-app .rp-credit-inline {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    flex: 0 0 auto;
     position: relative;
+    margin-left: auto;
+}
+
+.restaurant-pos-app .rp-credit-inline .form-check-label {
+    white-space: nowrap;
 }
 
 .restaurant-pos-app .rp-contact-search {
-    max-width: 14rem;
-    min-width: 10rem;
+    width: 7.5rem;
+    min-width: 6rem;
+    max-width: 9rem;
 }
 
-.restaurant-pos-app .rp-credit-row #rpContactDropdown {
+.restaurant-pos-app .rp-selected-contact {
+    max-width: 10rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.restaurant-pos-app .rp-credit-inline #rpContactDropdown {
     position: absolute;
+    top: calc(100% + 2px);
+    right: 0;
     z-index: 30;
     max-height: 220px;
     overflow-y: auto;
     min-width: 14rem;
+}
+
+.restaurant-pos-app .rp-order-fields:has(.rp-order-bar) {
+    padding: 0.4rem 0.85rem;
 }
 
 /* —— Order fields strip —— */
