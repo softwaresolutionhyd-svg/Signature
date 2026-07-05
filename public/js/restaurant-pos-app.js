@@ -456,6 +456,9 @@
         el('#rpSumGrand', grand);
         const countEl = $('#rpCartCount');
         if (countEl) countEl.textContent = String(cart.length);
+        if (autoPaymentAmount && payments.length === 1) {
+            payments[0].amount = grand;
+        }
     }
 
     let orderListMode = null;
@@ -625,6 +628,10 @@
 
         if (mode === 'checkout' && !isCreditMode && orderType === 'sale') {
             const grand = calcCartTotals().grand;
+            if (autoPaymentAmount && payments.length === 1) {
+                payments[0].amount = grand;
+                payments[0].method = $('#rpPayMethod')?.value || payments[0].method || 'cash';
+            }
             const paySum = payments.reduce((s, p) => s + Number(p.amount || 0), 0);
             if (Math.abs(paySum - grand) > 0.02) {
                 alert('Payment total match nahi kar raha.');
@@ -670,9 +677,65 @@
         form.querySelector('[name="bill_tax_percent"]').value = '0';
         form.querySelector('[name="bill_discount_percent"]').value = posShowDiscount ? String(getBillDiscountPercent()) : '0';
         form.querySelector('[name="resume_order_id"]').value = resumeOrderId ? String(resumeOrderId) : '';
-        form.querySelector('[name="cash_tendered"]').value = '';
-        form.querySelector('[name="cash_change"]').value = '';
+        const cashTenderedInput = form.querySelector('[name="cash_tendered"]');
+        const cashChangeInput = form.querySelector('[name="cash_change"]');
+        if (cashTenderedInput) cashTenderedInput.value = '';
+        if (cashChangeInput) cashChangeInput.value = '';
         form.action = mode === 'hold' ? routes.hold : routes.checkout;
+        return true;
+    }
+
+    function checkoutFormData(extraFields = {}) {
+        const form = $('#rpSubmitForm');
+        if (!form) return null;
+
+        const totals = calcCartTotals();
+        const formData = new FormData(form);
+        formData.set('items', JSON.stringify(cartItemsForSubmit()));
+        if (!isCreditMode) {
+            const payMethod = $('#rpPayMethod')?.value || 'cash';
+            formData.set('payments', JSON.stringify([{ method: payMethod, amount: totals.grand }]));
+        }
+        Object.entries(extraFields).forEach(([key, value]) => {
+            formData.set(key, String(value));
+        });
+        return formData;
+    }
+
+    async function postCheckout(extraFields = {}) {
+        if (!prepareSubmit('checkout')) return false;
+
+        const formData = checkoutFormData(extraFields);
+        if (!formData) return false;
+
+        const res = await fetch(routes.checkout, {
+            method: 'POST',
+            headers: {
+                Accept: 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+            },
+            body: formData,
+        });
+
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+            const validationMsg = data.errors ? Object.values(data.errors).flat()[0] : null;
+            throw new Error(data.message || validationMsg || 'Payment failed.');
+        }
+
+        const receiptUrl = data.receipt_url
+            || (data.order_id ? (routes.receipt || '').replace('__ID__', String(data.order_id)) : '');
+        if (receiptUrl) {
+            window.location.assign(receiptUrl);
+            return true;
+        }
+
+        if (data.redirect_url) {
+            window.location.assign(data.redirect_url);
+            return true;
+        }
+
+        resetForNewBill();
         return true;
     }
 
@@ -730,9 +793,7 @@
         }, 280);
     }
 
-    function confirmPayModal() {
-        if (!prepareSubmit('checkout')) return;
-
+    async function confirmPayModal() {
         const grand = calcCartTotals().grand;
         const tendered = Number($('#rpCashTendered')?.value || 0);
         if (tendered < grand - 0.001) {
@@ -741,14 +802,21 @@
         }
 
         const change = Math.max(0, Math.round((tendered - grand) * 100) / 100);
-        const form = $('#rpSubmitForm');
-        if (!form) return;
+        const confirmBtn = $('#rpPayModalConfirm');
+        if (confirmBtn) confirmBtn.disabled = true;
 
-        form.querySelector('[name="cash_tendered"]').value = String(tendered);
-        form.querySelector('[name="cash_change"]').value = String(change);
-
-        getPayModal()?.hide();
-        form.submit();
+        try {
+            await postCheckout({
+                cash_tendered: tendered,
+                cash_change: change,
+            });
+            getPayModal()?.hide();
+        } catch (e) {
+            alert(e.message || 'Payment failed.');
+            updatePayModalAmounts();
+        } finally {
+            if (confirmBtn) confirmBtn.disabled = false;
+        }
     }
 
     function upsertPendingBill(order, updated) {
@@ -847,7 +915,20 @@
         }
     }
 
-    function submitOrder(mode) {
+    async function submitOrder(mode) {
+        if (mode === 'checkout' && !isCreditMode) {
+            const confirmBtn = $('#rpPayBtn');
+            if (confirmBtn) confirmBtn.disabled = true;
+            try {
+                await postCheckout();
+            } catch (e) {
+                alert(e.message || 'Payment failed.');
+            } finally {
+                if (confirmBtn) confirmBtn.disabled = false;
+            }
+            return;
+        }
+
         if (!prepareSubmit(mode)) return;
         $('#rpSubmitForm')?.submit();
     }

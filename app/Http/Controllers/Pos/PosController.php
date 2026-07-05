@@ -595,7 +595,7 @@ class PosController extends Controller
         return back()->with('success', 'Cash movement saved.');
     }
 
-    public function checkout(PosCheckoutRequest $request): RedirectResponse
+    public function checkout(PosCheckoutRequest $request): RedirectResponse|JsonResponse
     {
         $this->ensurePosTablesSchema();
         $this->ensurePosOrderSchemaForCheckout();
@@ -603,6 +603,7 @@ class PosController extends Controller
         $this->ensurePosSessionDailyClosingSchema();
 
         $session = $this->ensureOpenSessionForUser(Auth::user());
+        $wantsJson = $request->expectsJson() && $this->isRestaurantPosRequest($request);
 
         $serviceType = null;
         $restaurantTableId = null;
@@ -614,6 +615,10 @@ class PosController extends Controller
             $isCredit = $restaurantMeta['is_credit'];
             $contactId = $restaurantMeta['contact_id'];
             if ($isCredit && ! $contactId) {
+                if ($wantsJson) {
+                    return response()->json(['message' => 'Credit sale ke liye contact select karein.'], 422);
+                }
+
                 return back()->with('error', 'Credit sale ke liye contact select karein.');
             }
             $saleMode = $restaurantMeta['sale_mode'];
@@ -843,6 +848,19 @@ class PosController extends Controller
 
         $openReceipt = Setting::get('pos_open_receipt_after_sale', '1') === '1';
         $msg = $isCredit ? 'Credit sale recorded successfully.' : 'Order paid successfully.';
+
+        if ($wantsJson) {
+            return response()->json([
+                'success' => true,
+                'message' => $msg,
+                'order_id' => $order->id,
+                'order_no' => $order->order_no,
+                'receipt_url' => $openReceipt ? route('restaurant-pos.receipt', $order) : null,
+                'redirect_url' => $openReceipt
+                    ? route('restaurant-pos.receipt', $order)
+                    : route('restaurant-pos.index'),
+            ]);
+        }
 
         if ($customerType === 'mess_use' && ! $isCredit) {
             if ($openReceipt) {
