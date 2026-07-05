@@ -18,6 +18,7 @@ final class ModuleAccess
         'maintenance' => 'Maintenance',
         'custom-forms' => 'Custom Forms',
         'expenses' => 'Expenses',
+        'accounts' => 'Accounts',
         'reports' => 'Reports',
         'analytics' => 'Analytics',
         'contacts' => 'Contacts',

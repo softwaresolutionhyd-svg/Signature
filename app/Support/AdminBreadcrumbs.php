@@ -57,6 +57,7 @@ final class AdminBreadcrumbs
             str_starts_with($name, 'settings.') => [$dash, ['label' => 'Settings', 'url' => null]],
             str_starts_with($name, 'reports.')  => self::reports($name, $dash),
             str_starts_with($name, 'expenses.')  => self::expenses($name, $dash),
+            str_starts_with($name, 'accounts.')  => self::accounts($name, $dash),
             str_starts_with($name, 'calendar.')    => [$dash, ['label' => 'Calendar',    'url' => null]],
             str_starts_with($name, 'contacts.')    => self::contacts($name, $dash),
             str_starts_with($name, 'credit-book.') => [$dash, ['label' => 'Credit Book', 'url' => null]],
@@ -326,6 +327,46 @@ final class AdminBreadcrumbs
             $out[] = ['label' => 'View Expense', 'url' => null];
         }
         return $out;
+    }
+
+    private static function accounts(string $name, array $dash): array
+    {
+        $hub = ['label' => 'Accounts', 'url' => $name === 'accounts.index' ? null : route('accounts.index')];
+        if ($name === 'accounts.index') {
+            return [$dash, $hub];
+        }
+
+        if (str_starts_with($name, 'accounts.chart-of-accounts.')) {
+            $out = [$dash, $hub, [
+                'label' => 'Chart of Accounts',
+                'url' => $name === 'accounts.chart-of-accounts.index' ? null : route('accounts.chart-of-accounts.index'),
+            ]];
+            self::appendCrudTail($out, $name);
+
+            return $out;
+        }
+
+        if (str_starts_with($name, 'accounts.journal-entries.')) {
+            $out = [$dash, $hub, [
+                'label' => 'Journal Entries',
+                'url' => in_array($name, ['accounts.journal-entries.index'], true) ? null : route('accounts.journal-entries.index'),
+            ]];
+            if (in_array($name, ['accounts.journal-entries.create', 'accounts.journal-entries.store'], true)) {
+                $out[] = ['label' => 'New Entry', 'url' => null];
+            } elseif (in_array($name, ['accounts.journal-entries.edit', 'accounts.journal-entries.update'], true)) {
+                $out[] = ['label' => 'Edit Entry', 'url' => null];
+            } elseif ($name === 'accounts.journal-entries.show') {
+                $out[] = ['label' => 'View Entry', 'url' => null];
+            }
+
+            return $out;
+        }
+
+        if (str_starts_with($name, 'accounts.reports.')) {
+            return [$dash, $hub, ['label' => 'Trial Balance', 'url' => null]];
+        }
+
+        return [$dash, $hub];
     }
 
     /**

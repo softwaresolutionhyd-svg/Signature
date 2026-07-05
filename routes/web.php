@@ -27,6 +27,10 @@ use App\Http\Controllers\Employee\EmployeeController;
 use App\Http\Controllers\Employee\PayrollController;
 use App\Http\Controllers\Expense\ExpenseController;
 use App\Http\Controllers\Expense\ExpenseCategoryController;
+use App\Http\Controllers\Accounts\AccountsController;
+use App\Http\Controllers\Accounts\ChartOfAccountController;
+use App\Http\Controllers\Accounts\JournalEntryController;
+use App\Http\Controllers\Accounts\AccountReportController;
 use App\Http\Controllers\CalendarController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\CreditBookController;
@@ -343,6 +347,29 @@ Route::middleware(['auth', 'employee', 'passwordChanged'])->group(function () {
         Route::get('/{calendar}',    [CalendarController::class, 'show'])   ->name('show');
         Route::put('/{calendar}',    [CalendarController::class, 'update']) ->name('update');
         Route::delete('/{calendar}', [CalendarController::class, 'destroy'])->name('destroy');
+    });
+
+    // Accounts
+    Route::prefix('accounts')->name('accounts.')->middleware('moduleAccess')->group(function () {
+        Route::get('/', [AccountsController::class, 'index'])->name('index');
+
+        Route::get('/chart-of-accounts', [ChartOfAccountController::class, 'index'])->name('chart-of-accounts.index');
+        Route::get('/chart-of-accounts/create', [ChartOfAccountController::class, 'create'])->name('chart-of-accounts.create');
+        Route::post('/chart-of-accounts', [ChartOfAccountController::class, 'store'])->name('chart-of-accounts.store');
+        Route::get('/chart-of-accounts/{chartOfAccount}/edit', [ChartOfAccountController::class, 'edit'])->name('chart-of-accounts.edit');
+        Route::put('/chart-of-accounts/{chartOfAccount}', [ChartOfAccountController::class, 'update'])->name('chart-of-accounts.update');
+        Route::delete('/chart-of-accounts/{chartOfAccount}', [ChartOfAccountController::class, 'destroy'])->name('chart-of-accounts.destroy');
+
+        Route::get('/journal-entries', [JournalEntryController::class, 'index'])->name('journal-entries.index');
+        Route::get('/journal-entries/create', [JournalEntryController::class, 'create'])->name('journal-entries.create');
+        Route::post('/journal-entries', [JournalEntryController::class, 'store'])->name('journal-entries.store');
+        Route::get('/journal-entries/{journalEntry}', [JournalEntryController::class, 'show'])->name('journal-entries.show');
+        Route::get('/journal-entries/{journalEntry}/edit', [JournalEntryController::class, 'edit'])->name('journal-entries.edit');
+        Route::put('/journal-entries/{journalEntry}', [JournalEntryController::class, 'update'])->name('journal-entries.update');
+        Route::delete('/journal-entries/{journalEntry}', [JournalEntryController::class, 'destroy'])->name('journal-entries.destroy');
+        Route::post('/journal-entries/{journalEntry}/post', [JournalEntryController::class, 'post'])->name('journal-entries.post');
+
+        Route::get('/reports/trial-balance', [AccountReportController::class, 'trialBalance'])->name('reports.trial-balance');
     });
 
     // Expenses
