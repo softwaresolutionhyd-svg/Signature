@@ -28,6 +28,7 @@ use App\Notifications\StockUpdated;
 use App\Support\DailyOrderNumber;
 use App\Services\KitchenService;
 use App\Services\ManufacturingStockService;
+use App\Services\AutoJournalService;
 use App\Services\OrderTakerService;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Http\JsonResponse;
@@ -45,6 +46,7 @@ class PosController extends Controller
 
     public function __construct(
         private readonly ManufacturingStockService $manufacturingStock,
+        private readonly AutoJournalService $autoJournal,
     ) {}
 
     public function index(Request $request): View
@@ -809,6 +811,8 @@ class PosController extends Controller
             return $order;
         });
 
+        $this->autoJournal->postPosSale($order);
+
         $openReceipt = Setting::get('pos_open_receipt_after_sale', '1') === '1';
         $msg = $isCredit ? 'Credit sale recorded successfully.' : 'Order paid successfully.';
 
@@ -1117,7 +1121,7 @@ class PosController extends Controller
             ]);
         }
 
-        return DB::connection('tenant')->transaction(function () use ($order, $paymentMethod) {
+        $settled = DB::connection('tenant')->transaction(function () use ($order, $paymentMethod) {
             $locked = PosOrder::query()->whereKey($order->id)->lockForUpdate()->firstOrFail();
             if ($locked->status !== 'draft') {
                 throw ValidationException::withMessages([
@@ -1158,6 +1162,10 @@ class PosController extends Controller
 
             return $locked->fresh();
         });
+
+        $this->autoJournal->postPosSale($settled);
+
+        return $settled;
     }
 
     public function receipt(Request $request, PosOrder $order): View

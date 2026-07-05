@@ -27,6 +27,13 @@
 
 @include('accounts.partials.subnav')
 
+@if($entry->source !== 'manual')
+<div class="alert alert-info py-2 small mb-4">
+    Auto-posted from <strong>{{ strtoupper($entry->source) }}</strong>
+    @if($entry->reference) · Ref: {{ $entry->reference }} @endif
+</div>
+@endif
+
 <div class="row g-3 mb-4">
     <div class="col-md-4">
         <div class="card border-0 shadow-sm h-100">

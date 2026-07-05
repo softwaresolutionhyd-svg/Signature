@@ -14,6 +14,10 @@ final class PurchaseOrderReceiveService
 {
     private const FIFO_EPSILON = 0.000001;
 
+    public function __construct(
+        private readonly AutoJournalService $autoJournal
+    ) {}
+
     public function receive(PurchaseOrder $order): void
     {
         abort_unless($order->status === 'confirmed', 403);
@@ -83,6 +87,8 @@ final class PurchaseOrderReceiveService
                 'received_at' => now(),
             ]);
         });
+
+        $this->autoJournal->postPurchaseReceived($order->fresh());
     }
 
     /**

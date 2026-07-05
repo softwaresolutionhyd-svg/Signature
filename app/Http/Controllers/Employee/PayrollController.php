@@ -7,11 +7,16 @@ use App\Models\Employee;
 use App\Models\PayrollEntry;
 use App\Models\Setting;
 use App\Support\ActivityLogger;
+use App\Services\AutoJournalService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class PayrollController extends Controller
 {
+    public function __construct(
+        private readonly AutoJournalService $autoJournal
+    ) {}
+
     public function index(Request $request)
     {
         $period = $request->query('period', now()->format('Y-m'));
@@ -107,6 +112,8 @@ class PayrollController extends Controller
         $payrollEntry->status = 'paid';
         $payrollEntry->paid_at = now();
         $payrollEntry->save();
+
+        $this->autoJournal->postPayrollPaid($payrollEntry);
 
         ActivityLogger::log('payroll.paid', 'Payroll marked paid', $payrollEntry);
 

@@ -7,12 +7,17 @@ use App\Models\Employee;
 use App\Models\Expense;
 use App\Models\ExpenseCategory;
 use App\Models\Setting;
+use App\Services\AutoJournalService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 
 class ExpenseController extends Controller
 {
+    public function __construct(
+        private readonly AutoJournalService $autoJournal
+    ) {}
+
     public function index(Request $request)
     {
         $query = Expense::with(['employee', 'category'])
@@ -175,6 +180,8 @@ class ExpenseController extends Controller
             return back()->with('error', 'Only approved expenses can be marked as paid.');
         }
         $expense->update(['status' => Expense::STATUS_PAID, 'paid_at' => now()]);
+        $this->autoJournal->postExpensePaid($expense);
+
         return back()->with('success', 'Expense marked as paid.');
     }
 
