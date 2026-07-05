@@ -329,6 +329,11 @@
                                        value="{{ old('accounts_journal_per_page', $settings['accounts_journal_per_page'] ?? 25) }}">
                             </div>
                         </div>
+                        <div class="form-check mt-3">
+                            <input type="hidden" name="accounts_auto_journal" value="0">
+                            <input class="form-check-input" type="checkbox" name="accounts_auto_journal" value="1" id="accounts_auto_journal" @checked($modChecked('accounts_auto_journal'))>
+                            <label class="form-check-label" for="accounts_auto_journal">Auto-post journal entries from POS, Expenses, Purchase &amp; Payroll</label>
+                        </div>
                     </div>
                 </div>
             </div>

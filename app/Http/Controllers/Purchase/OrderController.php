@@ -11,6 +11,7 @@ use App\Models\PurchaseOrder;
 use App\Models\PurchaseOrderLine;
 use App\Models\PurchaseVendor;
 use App\Models\Setting;
+use App\Services\AutoJournalService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -18,6 +19,10 @@ use Illuminate\Validation\ValidationException;
 
 class OrderController extends Controller
 {
+    public function __construct(
+        private readonly AutoJournalService $autoJournal
+    ) {}
+
     public function index(Request $request)
     {
         $status = $request->query('status');
@@ -268,6 +273,8 @@ class OrderController extends Controller
             'payment_status' => 'paid',
             'paid_at' => now(),
         ]);
+
+        $this->autoJournal->postPurchasePaid($order);
 
         return redirect()->route('purchase.orders.edit', $order)->with('status', 'Purchase marked as paid.');
     }

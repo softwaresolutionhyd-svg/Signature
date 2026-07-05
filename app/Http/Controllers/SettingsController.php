@@ -63,6 +63,7 @@ class SettingsController extends Controller
         'expenses_require_receipt_on_submit'=> '0',
         'accounts_per_page'                 => '25',
         'accounts_journal_per_page'         => '25',
+        'accounts_auto_journal'             => '1',
         'employees_per_page'                => '20',
         'employees_ref_per_page'            => '20',
         'product_extra_cost_fields'         => '[{"key":"gas_charges","label":"Gas charges","rate":20,"operator":"plus","base":"cost","target":"effective_cost"}]',
@@ -114,6 +115,7 @@ class SettingsController extends Controller
             'expenses_categories_per_page' => ['required', 'integer', 'min:5', 'max:100'],
             'accounts_per_page' => ['required', 'integer', 'min:5', 'max:100'],
             'accounts_journal_per_page' => ['required', 'integer', 'min:5', 'max:100'],
+            'accounts_auto_journal' => ['nullable', 'boolean'],
             'employees_per_page' => ['required', 'integer', 'min:5', 'max:100'],
             'employees_ref_per_page' => ['required', 'integer', 'min:5', 'max:100'],
             'product_extra_cost_fields' => ['nullable', 'array', 'max:20'],
@@ -140,6 +142,7 @@ class SettingsController extends Controller
             'pos_enable_tables',
             'inventory_show_low_stock_banner',
             'expenses_require_receipt_on_submit',
+            'accounts_auto_journal',
         ] as $boolKey) {
             $data[$boolKey] = $request->boolean($boolKey) ? '1' : '0';
         }

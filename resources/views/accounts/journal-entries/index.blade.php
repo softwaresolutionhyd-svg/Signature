@@ -49,6 +49,7 @@
                     <th>Date</th>
                     <th>Reference</th>
                     <th>Description</th>
+                    <th>Source</th>
                     <th>Status</th>
                     <th class="text-end">Debit</th>
                     <th class="text-end">Credit</th>
@@ -62,12 +63,13 @@
                     <td>{{ $entry->entry_date->format('d M Y') }}</td>
                     <td>{{ $entry->reference ?: '—' }}</td>
                     <td class="text-truncate" style="max-width:200px">{{ $entry->description ?: '—' }}</td>
+                    <td><span class="badge bg-light text-dark border text-uppercase">{{ $entry->source }}</span></td>
                     <td><span class="badge bg-{{ $st['color'] }}">{{ $st['label'] }}</span></td>
                     <td class="text-end">{{ $currency }} {{ number_format($entry->total_debit, 2) }}</td>
                     <td class="text-end">{{ $currency }} {{ number_format($entry->total_credit, 2) }}</td>
                 </tr>
                 @empty
-                <tr><td colspan="7" class="text-center text-secondary py-4">No journal entries found.</td></tr>
+                <tr><td colspan="8" class="text-center text-secondary py-4">No journal entries found.</td></tr>
                 @endforelse
             </tbody>
         </table>
