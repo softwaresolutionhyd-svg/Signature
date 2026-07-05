@@ -19,6 +19,11 @@ class LeaveRequestController extends Controller
 {
     public function index(Request $request)
     {
+        if (! Schema::hasTable('leave_requests')) {
+            return redirect()->route('hr.index')
+                ->withErrors('Leave module tables are not ready. Run migrate on server: php artisan migrate --force');
+        }
+
         $status = trim((string) $request->query('status', ''));
         $employeeId = (int) $request->query('employee_id', 0);
         $month = trim((string) $request->query('month', ''));
@@ -99,6 +104,11 @@ class LeaveRequestController extends Controller
 
     public function store(Request $request)
     {
+        if (! Schema::hasTable('leave_requests')) {
+            return redirect()->route('hr.index')
+                ->withErrors('Leave module tables are not ready. Run migrate on server.');
+        }
+
         $canPickEmployee = $this->canViewAllLeave($request);
         $myEmployee = $this->linkedEmployee($request);
 
