@@ -55,6 +55,8 @@ class ProductController extends Controller
 
     public function index(Request $request)
     {
+        $this->ensureInventoryProductsImageColumn();
+
         $q            = trim((string) $request->query('q', ''));
         $stockFilter  = $request->query('stock_filter', '');
         $categoryId   = (int) $request->query('category_id', 0);
@@ -244,6 +246,8 @@ class ProductController extends Controller
 
     public function create()
     {
+        $this->ensureInventoryProductsImageColumn();
+
         [$uomLibraryUnits, $uomLibraryRules] = $this->uomLibraryForProductForm();
 
         return view('inventory.products.create', array_merge(
@@ -254,6 +258,7 @@ class ProductController extends Controller
 
     public function store(Request $request)
     {
+        $this->ensureInventoryProductsImageColumn();
         $this->normalizeRequestUomBlanks($request);
 
         $allowedUoms = $this->allowedUomCodesForProductForm(null);
@@ -315,11 +320,7 @@ class ProductController extends Controller
 
         $product = InventoryProduct::create($data);
 
-        if ($request->hasFile('image')) {
-            $product->update([
-                'image_path' => $this->productImages->storeSquare($request->file('image')),
-            ]);
-        }
+        $this->syncProductImage($request, $product);
 
         $conversions = $request->input('conversions', []);
         foreach ($conversions as $c) {
@@ -344,6 +345,8 @@ class ProductController extends Controller
 
     public function edit(Request $request, InventoryProduct $product)
     {
+        $this->ensureInventoryProductsImageColumn();
+
         $product->loadMissing('category.parent');
 
         $conversionMap = $product->uomConversions()
@@ -618,6 +621,12 @@ class ProductController extends Controller
             && Schema::hasColumn('inventory_products', 'extra_costs');
     }
 
+    private function inventoryProductsHaveImageColumn(): bool
+    {
+        return Schema::hasTable('inventory_products')
+            && Schema::hasColumn('inventory_products', 'image_path');
+    }
+
     /**
      * Add packet-size columns at runtime if missing (e.g. migrate not run). Only runs when the form sends those fields.
      */
@@ -657,6 +666,49 @@ class ProductController extends Controller
             }
         } catch (\Throwable $e) {
             report($e);
+        }
+    }
+
+    private function ensureInventoryProductsImageColumn(): void
+    {
+        if (! Schema::hasTable('inventory_products')) {
+            return;
+        }
+
+        if (Schema::hasColumn('inventory_products', 'image_path')) {
+            return;
+        }
+
+        try {
+            Schema::table('inventory_products', function (Blueprint $table) {
+                $table->string('image_path', 500)->nullable()->after('name');
+            });
+        } catch (\Throwable $e) {
+            report($e);
+        }
+    }
+
+    private function syncProductImage(Request $request, InventoryProduct $product): void
+    {
+        if (! $request->hasFile('image')) {
+            return;
+        }
+
+        if (! Schema::hasColumn('inventory_products', 'image_path')) {
+            throw ValidationException::withMessages([
+                'image' => ['Picture column is not ready yet. Run migrate on server, or save product without picture first.'],
+            ]);
+        }
+
+        try {
+            $product->update([
+                'image_path' => $this->productImages->storeSquare($request->file('image')),
+            ]);
+        } catch (\Throwable $e) {
+            report($e);
+            throw ValidationException::withMessages([
+                'image' => ['Picture upload failed. Try JPG/PNG under 4MB, or save without picture.'],
+            ]);
         }
     }
 
@@ -814,6 +866,7 @@ class ProductController extends Controller
 
     public function update(Request $request, InventoryProduct $product)
     {
+        $this->ensureInventoryProductsImageColumn();
         $this->normalizeRequestUomBlanks($request);
 
         $allowedUoms = $this->allowedUomCodesForProductForm($product);
@@ -872,14 +925,29 @@ class ProductController extends Controller
         $data['profit']        = isset($data['profit']) ? (float) $data['profit'] : round((float) $data['price'] - $effectiveCost, 2);
         $data['reorder_level'] = $data['for_purchase'] ? ($data['reorder_level'] ?? 0) : 0;
 
-        if ($request->boolean('remove_image')) {
-            $this->productImages->delete($product->image_path);
-            $data['image_path'] = null;
-        }
+        if ($request->boolean('remove_image') || $request->hasFile('image')) {
+            if (! $this->inventoryProductsHaveImageColumn()) {
+                throw ValidationException::withMessages([
+                    'image' => ['Picture column is not ready yet. Run migrate on server, or save without picture changes.'],
+                ]);
+            }
 
-        if ($request->hasFile('image')) {
-            $this->productImages->delete($product->image_path);
-            $data['image_path'] = $this->productImages->storeSquare($request->file('image'));
+            if ($request->boolean('remove_image')) {
+                $this->productImages->delete($product->image_path);
+                $data['image_path'] = null;
+            }
+
+            if ($request->hasFile('image')) {
+                try {
+                    $this->productImages->delete($product->image_path);
+                    $data['image_path'] = $this->productImages->storeSquare($request->file('image'));
+                } catch (\Throwable $e) {
+                    report($e);
+                    throw ValidationException::withMessages([
+                        'image' => ['Picture upload failed. Try JPG/PNG under 4MB, or save without picture.'],
+                    ]);
+                }
+            }
         }
 
         DB::connection('tenant')->transaction(function () use ($request, $product, $data) {
