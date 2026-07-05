@@ -16,6 +16,7 @@ use App\Models\InventoryUnitConversion;
 use App\Models\ManufacturingBom;
 use App\Support\ProductCosting;
 use App\Services\ProductImageService;
+use App\Services\InventoryStockService;
 use App\Models\ManufacturingBomLine;
 use App\Models\PosOrderItem;
 use App\Models\PurchaseOrderLine;
@@ -33,7 +34,8 @@ use Illuminate\Validation\ValidationException;
 class ProductController extends Controller
 {
     public function __construct(
-        private readonly ProductImageService $productImages
+        private readonly ProductImageService $productImages,
+        private readonly InventoryStockService $stockService,
     ) {}
 
     /**
@@ -1085,11 +1087,13 @@ class ProductController extends Controller
      */
     private function departmentFormDataForProduct(?InventoryProduct $product = null): array
     {
+        $warehouse = $this->stockService->ensureWarehouse();
+
         $departments = InventoryDepartment::query()
             ->where('active', true)
-            ->where('is_warehouse', false)
+            ->orderByDesc('is_warehouse')
             ->orderBy('name')
-            ->get(['id', 'name']);
+            ->get(['id', 'name', 'is_warehouse']);
 
         $selectedDepartmentIds = old('department_ids');
         if ($selectedDepartmentIds === null && $product) {
@@ -1098,6 +1102,9 @@ class ProductController extends Controller
             if ($selectedDepartmentIds === [] && $product->department_id) {
                 $selectedDepartmentIds = [(int) $product->department_id];
             }
+        }
+        if ($selectedDepartmentIds === null && ! $product) {
+            $selectedDepartmentIds = [(int) $warehouse->id];
         }
 
         if (! is_array($selectedDepartmentIds)) {
@@ -1115,20 +1122,20 @@ class ProductController extends Controller
     {
         $ids = $request->input('department_ids', []);
         if (! is_array($ids)) {
-            return [];
+            $ids = [];
         }
 
-        $ids = array_map('intval', $ids);
-        $warehouseIds = InventoryDepartment::query()
-            ->where('is_warehouse', true)
-            ->pluck('id')
-            ->map(fn ($id) => (int) $id)
-            ->all();
-
-        return array_values(array_unique(array_filter(
-            array_diff($ids, $warehouseIds),
+        $ids = array_values(array_unique(array_filter(
+            array_map('intval', $ids),
             fn (int $id) => $id > 0
         )));
+
+        if ($ids === []) {
+            $warehouse = $this->stockService->ensureWarehouse();
+            $ids = [(int) $warehouse->id];
+        }
+
+        return $ids;
     }
 
     /** @param  list<int>  $departmentIds */

@@ -96,7 +96,12 @@
                     <input class="form-check-input" type="checkbox" name="department_ids[]" value="{{ $dep->id }}"
                            id="productDept{{ $dep->id }}"
                            @checked(in_array((string) $dep->id, $selectedDepartmentIds, true))>
-                    <label class="form-check-label small" for="productDept{{ $dep->id }}">{{ $dep->name }}</label>
+                    <label class="form-check-label small" for="productDept{{ $dep->id }}">
+                        {{ $dep->name }}
+                        @if($dep->is_warehouse ?? false)
+                            <span class="text-secondary">(default)</span>
+                        @endif
+                    </label>
                 </div>
             @empty
                 <div class="small text-secondary">Koi department nahi — pehle add karein.</div>
