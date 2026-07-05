@@ -37,7 +37,7 @@
     $selectedParentCategoryId = old('parent_category_id', $categorySelection['parent_id'] ?? '');
     $selectedSubCategoryId = old('sub_category_id', $categorySelection['sub_category_id'] ?? '');
     $departments = $departments ?? collect();
-    $selectedDepartmentId = old('department_id', isset($product) && $product ? ($product->department_id ?? '') : '');
+    $selectedDepartmentIds = $selectedDepartmentIds ?? [];
 @endphp
 
 <div class="row g-3">
@@ -88,18 +88,24 @@
     </div>
 
     <div class="col-12 col-md-3">
-        <label class="form-label">Department</label>
-        <select name="department_id" class="form-select @error('department_id') is-invalid @enderror">
-            <option value="">—</option>
-            @foreach($departments as $dep)
-                <option value="{{ $dep->id }}" @selected((string) $selectedDepartmentId === (string) $dep->id)>
-                    {{ $dep->name }}
-                </option>
-            @endforeach
-        </select>
-        @error('department_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
+        <label class="form-label">Departments</label>
+        <div class="border rounded p-2 bg-white @error('department_ids') border-danger @enderror @error('department_ids.*') border-danger @enderror"
+             style="max-height:140px;overflow-y:auto;">
+            @forelse($departments as $dep)
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="department_ids[]" value="{{ $dep->id }}"
+                           id="productDept{{ $dep->id }}"
+                           @checked(in_array((string) $dep->id, $selectedDepartmentIds, true))>
+                    <label class="form-check-label small" for="productDept{{ $dep->id }}">{{ $dep->name }}</label>
+                </div>
+            @empty
+                <div class="small text-secondary">Koi department nahi — pehle add karein.</div>
+            @endforelse
+        </div>
+        @error('department_ids')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
+        @error('department_ids.*')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
         <div class="form-text text-secondary small">
-            <a href="{{ route('inventory.departments.index') }}">Departments manage karein</a>
+            Ek se zyada select ho sakte hain. <a href="{{ route('inventory.departments.index') }}">Departments manage karein</a>
         </div>
     </div>
 

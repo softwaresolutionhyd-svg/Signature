@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Schema;
@@ -279,6 +280,16 @@ class InventoryProduct extends Model
     public function department(): BelongsTo
     {
         return $this->belongsTo(InventoryDepartment::class, 'department_id');
+    }
+
+    public function departments(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            InventoryDepartment::class,
+            'inventory_product_department',
+            'product_id',
+            'department_id'
+        )->withPivot('company_id')->withTimestamps();
     }
 
     public function stocks(): HasMany

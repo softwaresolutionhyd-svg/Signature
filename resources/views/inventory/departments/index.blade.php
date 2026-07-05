@@ -52,9 +52,9 @@
                         </td>
                         <td class="text-end">{{ fmt_num((float) ($d->stock_qty ?? 0), 3) }}</td>
                         <td>
-                            @if($d->products_count > 0)
+                            @if($d->catalog_products_count > 0)
                                 <a href="{{ route('inventory.products.index', ['department_id' => $d->id]) }}" class="text-decoration-none">
-                                    {{ $d->products_count }}
+                                    {{ $d->catalog_products_count }}
                                 </a>
                             @else
                                 <span class="text-secondary">0</span>

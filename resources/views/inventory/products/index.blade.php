@@ -90,7 +90,15 @@
                                 <div class="fw-semibold">{{ $p->name }}</div>
                                 <div class="small text-secondary">{{ $p->uom }}</div>
                             </td>
-                            <td>{{ $p->department?->name ?? '—' }}</td>
+                            <td>
+                                @php
+                                    $deptNames = $p->departments->pluck('name')->filter()->values();
+                                    if ($deptNames->isEmpty() && $p->department) {
+                                        $deptNames = collect([$p->department->name]);
+                                    }
+                                @endphp
+                                {{ $deptNames->isNotEmpty() ? $deptNames->join(', ') : '—' }}
+                            </td>
                             <td>{{ $p->category ? $p->category->breadcrumbLabel() : '—' }}</td>
                             <td class="text-end">{{ fmt_num((float) $p->total, 2) }}</td>
                             <td class="text-end">{{ fmt_num((float) $p->price, 2) }}</td>

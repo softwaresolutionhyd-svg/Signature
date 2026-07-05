@@ -89,7 +89,7 @@ class ProductController extends Controller
             })
             ->select('inventory_products.*')
             ->selectRaw('CASE WHEN ipf.id IS NULL THEN 0 ELSE 1 END as is_starred_sort')
-            ->with(['category:id,name,parent_id', 'category.parent:id,name', 'department:id,name'])
+            ->with(['category:id,name,parent_id', 'category.parent:id,name', 'department:id,name', 'departments:id,name'])
             ->withCount(['manufacturingBoms as active_manufacturing_boms_count' => fn ($q) => $q->where('active', true)])
             ->with(['uomConversions' => fn ($q) => $q->where('active', true)->select(['id', 'product_id', 'uom', 'factor_to_base'])])
             ->when($q !== '', function ($query) use ($q) {
@@ -98,11 +98,15 @@ class ProductController extends Controller
                         ->orWhere('barcode', 'like', "%{$q}%")
                         ->orWhere('name', 'like', "%{$q}%")
                         ->orWhereHas('category', fn ($cat) => $cat->where('name', 'like', "%{$q}%"))
-                        ->orWhereHas('department', fn ($dep) => $dep->where('name', 'like', "%{$q}%"));
+                        ->orWhereHas('department', fn ($dep) => $dep->where('name', 'like', "%{$q}%"))
+                        ->orWhereHas('departments', fn ($dep) => $dep->where('name', 'like', "%{$q}%"));
                 });
             })
             ->when($categoryId !== null, fn ($query) => $query->where('inventory_products.category_id', $categoryId))
-            ->when($departmentId !== null, fn ($query) => $query->where('inventory_products.department_id', $departmentId))
+            ->when($departmentId !== null, fn ($query) => $query->whereHas(
+                'departments',
+                fn ($dep) => $dep->where('inventory_departments.id', $departmentId)
+            ))
             ->when($stockFilter === 'low', fn ($q) => $q->where('for_purchase', true)->where('reorder_level', '>', 0)->whereRaw('qty_on_hand <= reorder_level')->excludingActiveBomFinishedProducts())
             ->when($stockFilter === 'zero', fn ($q) => $q->where('for_purchase', true)->where('qty_on_hand', '<=', 0))
             ->when($stockFilter === 'ok', fn ($q) => $q->where('for_purchase', true)->where(fn ($sub) => $sub->where('reorder_level', 0)->orWhereRaw('qty_on_hand > reorder_level')))
@@ -257,7 +261,7 @@ class ProductController extends Controller
         return view('inventory.products.create', array_merge(
             compact('uomLibraryUnits', 'uomLibraryRules'),
             $this->categoryFormDataForProduct(null),
-            $this->departmentFormDataForProduct()
+            $this->departmentFormDataForProduct(null)
         ));
     }
 
@@ -281,7 +285,8 @@ class ProductController extends Controller
             'name'          => ['required', 'string', 'max:200'],
             'parent_category_id' => ['nullable', 'integer', 'exists:tenant.inventory_categories,id'],
             'sub_category_id'    => ['nullable', 'integer', 'exists:tenant.inventory_categories,id'],
-            'department_id'      => ['nullable', 'integer', 'exists:tenant.inventory_departments,id'],
+            'department_ids'     => ['nullable', 'array'],
+            'department_ids.*'   => ['integer', 'exists:tenant.inventory_departments,id'],
             'uom'           => $uomRules,
             'package_contents_qty' => ['nullable', 'required_with:package_contents_uom', 'numeric', 'min:0.000001'],
             'package_contents_uom' => $pkgUomRules,
@@ -301,7 +306,7 @@ class ProductController extends Controller
         $this->assertUniqueConversionUnits($data);
 
         $data['category_id'] = $this->resolveProductCategoryId($request);
-        $data['department_id'] = $request->integer('department_id') ?: null;
+        unset($data['department_ids']);
 
         $this->applyPackageContentsFields($request, $data);
         $this->applyProductCostingFields($request, $data);
@@ -323,8 +328,10 @@ class ProductController extends Controller
         $data['profit']        = isset($data['profit']) ? (float) $data['profit'] : round((float) $data['price'] - $effectiveCost, 2);
         $data['reorder_level'] = $data['for_purchase'] ? ($data['reorder_level'] ?? 0) : 0;
         $data['qty_on_hand']   = 0;
+        $data['department_id'] = null;
 
         $product = InventoryProduct::create($data);
+        $this->syncProductDepartments($product, $this->validatedDepartmentIds($request));
 
         if ($request->hasFile('image')) {
             $product->update([
@@ -355,7 +362,7 @@ class ProductController extends Controller
 
     public function edit(Request $request, InventoryProduct $product)
     {
-        $product->loadMissing(['category.parent', 'department']);
+        $product->loadMissing(['category.parent', 'department', 'departments']);
 
         $conversionMap = $product->uomConversions()
             ->where('active', true)
@@ -468,7 +475,7 @@ class ProductController extends Controller
         return view('inventory.products.edit', array_merge(
             compact('product', 'purchaseSummary', 'history', 'productBoms', 'bomLineCosts', 'componentUsedInBoms', 'canManufacturing', 'uomLibraryUnits', 'uomLibraryRules', 'productReturnPath', 'bomStandardCost'),
             $this->categoryFormDataForProduct($product),
-            $this->departmentFormDataForProduct()
+            $this->departmentFormDataForProduct($product)
         ));
     }
 
@@ -844,7 +851,8 @@ class ProductController extends Controller
             'name'          => ['required', 'string', 'max:200'],
             'parent_category_id' => ['nullable', 'integer', 'exists:tenant.inventory_categories,id'],
             'sub_category_id'    => ['nullable', 'integer', 'exists:tenant.inventory_categories,id'],
-            'department_id'      => ['nullable', 'integer', 'exists:tenant.inventory_departments,id'],
+            'department_ids'     => ['nullable', 'array'],
+            'department_ids.*'   => ['integer', 'exists:tenant.inventory_departments,id'],
             'uom'           => $uomRules,
             'package_contents_qty' => ['nullable', 'required_with:package_contents_uom', 'numeric', 'min:0.000001'],
             'package_contents_uom' => $pkgUomRules,
@@ -865,7 +873,7 @@ class ProductController extends Controller
         $this->assertUniqueConversionUnits($data);
 
         $data['category_id'] = $this->resolveProductCategoryId($request);
-        $data['department_id'] = $request->integer('department_id') ?: null;
+        unset($data['department_ids']);
 
         $this->applyPackageContentsFields($request, $data);
         $recipeApplied = $this->applyActiveRecipeStandardCost($product, $data);
@@ -896,8 +904,12 @@ class ProductController extends Controller
             $data['image_path'] = $this->productImages->storeSquare($request->file('image'));
         }
 
-        DB::connection('tenant')->transaction(function () use ($request, $product, $data) {
+        $departmentIds = $this->validatedDepartmentIds($request);
+
+        DB::connection('tenant')->transaction(function () use ($request, $product, $data, $departmentIds) {
+            $data['department_id'] = $departmentIds[0] ?? null;
             $product->update($data);
+            $this->syncProductDepartments($product, $departmentIds);
             $product->refresh();
 
             if ($request->has('conversions')) {
@@ -1066,16 +1078,71 @@ class ProductController extends Controller
     }
 
     /**
-     * @return array{departments: \Illuminate\Support\Collection<int, InventoryDepartment>}
+     * @return array{
+     *     departments: \Illuminate\Support\Collection<int, InventoryDepartment>,
+     *     selectedDepartmentIds: list<string>
+     * }
      */
-    private function departmentFormDataForProduct(): array
+    private function departmentFormDataForProduct(?InventoryProduct $product = null): array
     {
+        $departments = InventoryDepartment::query()
+            ->where('active', true)
+            ->where('is_warehouse', false)
+            ->orderBy('name')
+            ->get(['id', 'name']);
+
+        $selectedDepartmentIds = old('department_ids');
+        if ($selectedDepartmentIds === null && $product) {
+            $product->loadMissing('departments');
+            $selectedDepartmentIds = $product->departments->pluck('id')->all();
+            if ($selectedDepartmentIds === [] && $product->department_id) {
+                $selectedDepartmentIds = [(int) $product->department_id];
+            }
+        }
+
+        if (! is_array($selectedDepartmentIds)) {
+            $selectedDepartmentIds = [];
+        }
+
         return [
-            'departments' => InventoryDepartment::query()
-                ->where('active', true)
-                ->orderBy('name')
-                ->get(['id', 'name']),
+            'departments' => $departments,
+            'selectedDepartmentIds' => array_map('strval', $selectedDepartmentIds),
         ];
+    }
+
+    /** @return list<int> */
+    private function validatedDepartmentIds(Request $request): array
+    {
+        $ids = $request->input('department_ids', []);
+        if (! is_array($ids)) {
+            return [];
+        }
+
+        $ids = array_map('intval', $ids);
+        $warehouseIds = InventoryDepartment::query()
+            ->where('is_warehouse', true)
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+
+        return array_values(array_unique(array_filter(
+            array_diff($ids, $warehouseIds),
+            fn (int $id) => $id > 0
+        )));
+    }
+
+    /** @param  list<int>  $departmentIds */
+    private function syncProductDepartments(InventoryProduct $product, array $departmentIds): void
+    {
+        $companyId = $product->company_id ?? current_company_id();
+        $syncData = [];
+
+        foreach ($departmentIds as $departmentId) {
+            $syncData[$departmentId] = ['company_id' => $companyId];
+        }
+
+        $product->departments()->sync($syncData);
+        $product->update(['department_id' => $departmentIds[0] ?? null]);
     }
 
     /**

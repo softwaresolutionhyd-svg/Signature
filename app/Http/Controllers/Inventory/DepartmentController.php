@@ -20,7 +20,7 @@ class DepartmentController extends Controller
         $this->stockService->ensureWarehouse();
 
         $departments = InventoryDepartment::query()
-            ->withCount('products')
+            ->withCount('catalogProducts')
             ->withSum('stocks as stock_qty', 'qty_on_hand')
             ->orderByDesc('is_warehouse')
             ->orderBy('active', 'desc')
