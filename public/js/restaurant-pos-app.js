@@ -118,6 +118,15 @@
         ].join('\n');
     }
 
+    function whatsappSendUrl(phone, encodedText) {
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        if (isMobile) {
+            return `https://wa.me/${phone}?text=${encodedText}`;
+        }
+
+        return `https://web.whatsapp.com/send?phone=${phone}&text=${encodedText}`;
+    }
+
     function openDeliveryWhatsapp() {
         if (selectedServiceType() !== 'delivery') return;
         if (!cart.length) {
@@ -136,7 +145,7 @@
             return;
         }
         const text = encodeURIComponent(buildDeliveryWhatsappMessage());
-        window.open(`https://wa.me/${phone}?text=${text}`, '_blank', 'noopener,noreferrer');
+        window.open(whatsappSendUrl(phone, text), '_blank', 'noopener,noreferrer');
     }
 
     function setCreditMode(on) {
