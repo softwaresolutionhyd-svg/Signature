@@ -69,7 +69,7 @@
             <span class="text-secondary small">On hand: <span class="fw-semibold">{{ fmt_num((float)$product->qty_on_hand, 3) }}</span> {{ $product->uom }}</span>
         </div>
         <div class="card-body">
-            <form method="POST" action="{{ route('inventory.products.update', $product) }}">
+            <form method="POST" action="{{ route('inventory.products.update', $product) }}" enctype="multipart/form-data">
                 @method('PUT')
                 @if($productReturn !== '')
                     <input type="hidden" name="return" value="{{ $productReturn }}">

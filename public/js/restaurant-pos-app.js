@@ -264,7 +264,11 @@
             const canDec = qty > locked;
             const price = unitPriceForProduct(p, p.uom);
             const label = displayProductName(p.name);
+            const img = p.image_url
+                ? `<img src="${escHtml(p.image_url)}" alt="" class="rp-mi-photo">`
+                : `<div class="rp-mi-photo rp-mi-photo--empty"><i class="bi bi-image"></i></div>`;
             return `<div class="rp-menu-item${qty > 0 ? ' has-qty' : ''}" data-product-id="${p.id}">
+                ${img}
                 <div class="rp-mi-name">${escHtml(label)}</div>
                 <div class="rp-mi-price">${fmtMoney(price)}</div>
                 <div class="rp-mi-qty">

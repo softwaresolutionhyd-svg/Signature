@@ -14,6 +14,7 @@ use App\Models\InventoryUnit;
 use App\Models\InventoryUnitConversion;
 use App\Models\ManufacturingBom;
 use App\Support\ProductCosting;
+use App\Services\ProductImageService;
 use App\Models\ManufacturingBomLine;
 use App\Models\PosOrderItem;
 use App\Models\PurchaseOrderLine;
@@ -30,6 +31,10 @@ use Illuminate\Validation\ValidationException;
 
 class ProductController extends Controller
 {
+    public function __construct(
+        private readonly ProductImageService $productImages
+    ) {}
+
     /**
      * Allow redirects only to same-app paths or URLs under config('app.url').
      */
@@ -281,6 +286,7 @@ class ProductController extends Controller
             'active'        => ['nullable', 'boolean'],
             'for_pos'       => ['nullable', 'boolean'],
             'for_purchase'  => ['nullable', 'boolean'],
+            'image'         => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:4096'],
         ]);
         $this->assertUniqueConversionUnits($data);
 
@@ -308,6 +314,12 @@ class ProductController extends Controller
         $data['qty_on_hand']   = 0;
 
         $product = InventoryProduct::create($data);
+
+        if ($request->hasFile('image')) {
+            $product->update([
+                'image_path' => $this->productImages->storeSquare($request->file('image')),
+            ]);
+        }
 
         $conversions = $request->input('conversions', []);
         foreach ($conversions as $c) {
@@ -834,6 +846,8 @@ class ProductController extends Controller
             'active'        => ['nullable', 'boolean'],
             'for_pos'       => ['nullable', 'boolean'],
             'for_purchase'  => ['nullable', 'boolean'],
+            'image'         => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:4096'],
+            'remove_image'  => ['nullable', 'boolean'],
         ]);
         $this->assertUniqueConversionUnits($data);
 
@@ -857,6 +871,16 @@ class ProductController extends Controller
         $effectiveCost         = (float) $data['cost'] + (float) collect((array) ($data['extra_costs'] ?? []))->sum();
         $data['profit']        = isset($data['profit']) ? (float) $data['profit'] : round((float) $data['price'] - $effectiveCost, 2);
         $data['reorder_level'] = $data['for_purchase'] ? ($data['reorder_level'] ?? 0) : 0;
+
+        if ($request->boolean('remove_image')) {
+            $this->productImages->delete($product->image_path);
+            $data['image_path'] = null;
+        }
+
+        if ($request->hasFile('image')) {
+            $this->productImages->delete($product->image_path);
+            $data['image_path'] = $this->productImages->storeSquare($request->file('image'));
+        }
 
         DB::connection('tenant')->transaction(function () use ($request, $product, $data) {
             $product->update($data);
@@ -891,6 +915,8 @@ class ProductController extends Controller
 
     public function destroy(InventoryProduct $product)
     {
+        $imagePath = $product->image_path;
+
         try {
             $product->delete();
         } catch (QueryException $e) {
@@ -905,6 +931,8 @@ class ProductController extends Controller
 
             throw $e;
         }
+
+        $this->productImages->delete($imagePath);
 
         return redirect()->route('inventory.products.index')->with('status', 'Product deleted.');
     }

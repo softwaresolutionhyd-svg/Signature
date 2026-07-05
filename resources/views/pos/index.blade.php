@@ -489,6 +489,22 @@
             font-size: 0.95rem;
             padding: 0.45rem 0.65rem;
         }
+
+        .pos-app .pos-product-thumb {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            object-fit: cover;
+            background: #f1f5f9;
+        }
+
+        .pos-app .pos-product-thumb--empty {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: #94a3b8;
+            border: 1px dashed #cbd5e1;
+        }
     </style>
 
     @if($errors->any())
@@ -1291,12 +1307,13 @@
 @section('scripts')
         @php
             $productJs = $products->map(function ($p) {
-                return [
-                    'id' => $p->id,
-                    'name' => $p->name,
-                    'sku' => $p->sku,
-                    'barcode' => $p->barcode,
-                    'uom' => $p->uom,
+        return [
+            'id' => $p->id,
+            'name' => $p->name,
+            'sku' => $p->sku,
+            'barcode' => $p->barcode,
+            'image_url' => $p->imageUrl(),
+            'uom' => $p->uom,
                     'price' => (float) $p->price,
                     'cost' => (float) $p->cost,
                     'gas_charges' => (float) $p->gasChargesAmount(),
@@ -1731,9 +1748,12 @@
                         ? 'font-size:13px;opacity:.9'
                         : 'font-size:13px';
                     const subCls = i === productSearchHighlight ? '' : ' text-secondary';
-                    return `<div class="pos-product-option px-3 py-2 small border-bottom${active}" role="option" data-product-id="${p.id}" data-index="${i}" style="cursor:pointer;">
-                        <div class="fw-semibold">${escHtml(p.name)}</div>
-                        <div class="${subCls}" style="${subStyle}">${escHtml(p.sku || '—')} · Stock ${escHtml(fmtQty(p.qty_on_hand))} ${escHtml(p.uom || '')}${productStockBadgeHtml(p)}</div>
+                    return `<div class="pos-product-option px-3 py-2 small border-bottom d-flex align-items-center gap-2${active}" role="option" data-product-id="${p.id}" data-index="${i}" style="cursor:pointer;">
+                        ${p.image_url ? `<img src="${escHtml(p.image_url)}" alt="" class="pos-product-thumb flex-shrink-0">` : `<span class="pos-product-thumb pos-product-thumb--empty flex-shrink-0"><i class="bi bi-image"></i></span>`}
+                        <div class="min-w-0 flex-grow-1">
+                            <div class="fw-semibold">${escHtml(p.name)}</div>
+                            <div class="${subCls}" style="${subStyle}">${escHtml(p.sku || '—')} · Stock ${escHtml(fmtQty(p.qty_on_hand))} ${escHtml(p.uom || '')}${productStockBadgeHtml(p)}</div>
+                        </div>
                     </div>`;
                 }).join('');
                 productSearchDropdown.classList.remove('d-none');

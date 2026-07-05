@@ -24,6 +24,7 @@ class InventoryProduct extends Model
         'sku',
         'barcode',
         'name',
+        'image_path',
         'uom',
         'package_contents_qty',
         'package_contents_uom',
@@ -256,6 +257,17 @@ class InventoryProduct extends Model
 
         return (float) $this->reorder_level > 0
             && (float) $this->qty_on_hand <= (float) $this->reorder_level;
+    }
+
+    /** Public URL for square POS/inventory product image. */
+    public function imageUrl(): ?string
+    {
+        $path = trim((string) ($this->image_path ?? ''));
+        if ($path === '') {
+            return null;
+        }
+
+        return asset('storage/'.$path);
     }
 
     public function category(): BelongsTo

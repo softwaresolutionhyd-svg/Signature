@@ -148,7 +148,7 @@ class PosController extends Controller
             ->with(['uomConversions' => fn ($q) => $q->where('active', true)])
             ->with(['category:id,name,parent_id', 'category.parent:id,name'])
             ->withExists(['manufacturingBoms' => fn ($q) => $q->where('active', true)])
-            ->get(['id', 'sku', 'barcode', 'name', 'uom', 'price', 'cost', 'gas_charges', 'extra_costs', 'qty_on_hand', 'reorder_level', 'active', 'for_pos', 'for_purchase', 'category_id']);
+            ->get(['id', 'sku', 'barcode', 'name', 'image_path', 'uom', 'price', 'cost', 'gas_charges', 'extra_costs', 'qty_on_hand', 'reorder_level', 'active', 'for_pos', 'for_purchase', 'category_id']);
 
         // Recent contacts for quick credit selection
         $contacts = Contact::where('active', true)->orderBy('name')->get(['id','name','phone']);

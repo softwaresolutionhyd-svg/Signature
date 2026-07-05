@@ -60,6 +60,31 @@
         @error('name')<div class="invalid-feedback">{{ $message }}</div>@enderror
     </div>
 
+    <div class="col-12 col-md-4">
+        <label class="form-label">Product Picture <span class="text-secondary small">(1:1 square)</span></label>
+        <input type="file" name="image" id="productImageInput" accept="image/jpeg,image/png,image/webp"
+               class="form-control @error('image') is-invalid @enderror">
+        @error('image')<div class="invalid-feedback">{{ $message }}</div>@enderror
+        <div class="form-text small text-secondary">POS menu box mein dikhegi. Auto crop center se square ban jati hai.</div>
+        <div class="mt-2 d-flex align-items-start gap-3 flex-wrap">
+            <div class="product-image-preview-wrap border rounded bg-light overflow-hidden" style="width:96px;height:96px;">
+                @php $existingImage = isset($product) && $product ? $product->imageUrl() : null; @endphp
+                <img src="{{ $existingImage ?: '' }}" alt="" id="productImagePreview"
+                     class="w-100 h-100 {{ $existingImage ? '' : 'd-none' }}" style="object-fit:cover;">
+                <div id="productImagePlaceholder" class="w-100 h-100 d-flex align-items-center justify-content-center text-secondary small {{ $existingImage ? 'd-none' : '' }}">
+                    <i class="bi bi-image fs-4"></i>
+                </div>
+            </div>
+            @if(isset($product) && $product && $product->image_path)
+                <div class="form-check mt-1">
+                    <input type="hidden" name="remove_image" value="0">
+                    <input class="form-check-input" type="checkbox" name="remove_image" value="1" id="removeProductImage">
+                    <label class="form-check-label small" for="removeProductImage">Picture hata dein</label>
+                </div>
+            @endif
+        </div>
+    </div>
+
     <div class="col-12 col-md-3">
         <label class="form-label">Category</label>
         <select name="parent_category_id" id="productParentCategory" class="form-select @error('parent_category_id') is-invalid @enderror">
@@ -720,6 +745,32 @@
         });
 
         fillSubcategories(initialParent, initialSub);
+    })();
+
+    (function initProductImagePreview() {
+        const input = document.getElementById('productImageInput');
+        const preview = document.getElementById('productImagePreview');
+        const placeholder = document.getElementById('productImagePlaceholder');
+        const removeCb = document.getElementById('removeProductImage');
+        if (!input || !preview) return;
+
+        input.addEventListener('change', () => {
+            const file = input.files && input.files[0];
+            if (!file) return;
+            const url = URL.createObjectURL(file);
+            preview.src = url;
+            preview.classList.remove('d-none');
+            placeholder?.classList.add('d-none');
+            if (removeCb) removeCb.checked = false;
+        });
+
+        removeCb?.addEventListener('change', () => {
+            if (!removeCb.checked) return;
+            preview.src = '';
+            preview.classList.add('d-none');
+            placeholder?.classList.remove('d-none');
+            input.value = '';
+        });
     })();
 </script>
 

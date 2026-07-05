@@ -623,11 +623,50 @@ body.admin-app-body:has(.restaurant-pos-app) .admin-main {
     border: 1px solid var(--rp-border-menu);
     border-radius: 10px;
     background: #fffcf8;
-    padding: 0.6rem 0.5rem 0.55rem;
+    padding: 0.55rem 0.5rem 0.55rem;
     text-align: center;
     cursor: default;
     transition: border-color 0.15s, box-shadow 0.15s;
     box-shadow: 0 1px 3px rgba(28, 25, 23, 0.05);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.restaurant-pos-app .rp-mi-photo {
+    width: 72px;
+    height: 72px;
+    border-radius: 10px;
+    object-fit: cover;
+    margin-bottom: 0.45rem;
+    background: #f5f5f4;
+    flex-shrink: 0;
+}
+
+.restaurant-pos-app .rp-mi-photo--empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #a8a29e;
+    border: 1px dashed #d6d3d1;
+    font-size: 1.25rem;
+}
+
+.restaurant-pos-app .rp-menu-item .rp-mi-name {
+    font-family: var(--rp-font);
+    font-size: 0.78rem;
+    font-weight: 600;
+    line-height: 1.35;
+    min-height: 2.1em;
+    margin-bottom: 0.25rem;
+    color: #292524;
+    letter-spacing: -0.01em;
+    word-break: break-word;
+    hyphens: auto;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
 }
 
 .restaurant-pos-app .rp-menu-item:hover {
@@ -639,23 +678,6 @@ body.admin-app-body:has(.restaurant-pos-app) .admin-main {
     border-color: #d97706;
     background: linear-gradient(180deg, #fffdf8 0%, #fff7e8 100%);
     box-shadow: 0 0 0 1px rgba(217, 119, 6, 0.2);
-}
-
-.restaurant-pos-app .rp-menu-item .rp-mi-name {
-    font-family: var(--rp-font);
-    font-size: 0.78rem;
-    font-weight: 600;
-    line-height: 1.35;
-    min-height: 2.6em;
-    margin-bottom: 0.3rem;
-    color: #292524;
-    letter-spacing: -0.01em;
-    word-break: break-word;
-    hyphens: auto;
-    display: -webkit-box;
-    -webkit-line-clamp: 3;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
 }
 
 .restaurant-pos-app .rp-menu-item .rp-mi-price {

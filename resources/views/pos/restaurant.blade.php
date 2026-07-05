@@ -6,7 +6,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="{{ asset('css/restaurant-pos.css') }}?v=24">
+<link rel="stylesheet" href="{{ asset('css/restaurant-pos.css') }}?v=25">
 @endpush
 
 @section('content')
@@ -20,6 +20,7 @@
             'id' => $p->id,
             'name' => $p->name,
             'sku' => $p->sku,
+            'image_url' => $p->imageUrl(),
             'uom' => $p->uom,
             'price' => (float) $p->price,
             'cost' => (float) $p->cost,
@@ -317,5 +318,5 @@
 <script>
 window.RESTAURANT_POS_BOOTSTRAP = @json($restaurantBootstrap);
 </script>
-<script src="{{ asset('js/restaurant-pos-app.js') }}?v=19"></script>
+<script src="{{ asset('js/restaurant-pos-app.js') }}?v=20"></script>
 @endsection
