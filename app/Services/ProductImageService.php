@@ -13,12 +13,15 @@ final class ProductImageService
 
     public function storeSquare(UploadedFile $file): string
     {
-        $contents = $this->makeSquareJpeg($file);
+        if (extension_loaded('gd')) {
+            try {
+                return $this->storeProcessedSquare($file);
+            } catch (\Throwable $e) {
+                report($e);
+            }
+        }
 
-        $name = 'products/'.Str::uuid()->toString().'.jpg';
-        Storage::disk('public')->put($name, $contents);
-
-        return $name;
+        return $this->storeOriginal($file);
     }
 
     public function delete(?string $path): void
@@ -30,12 +33,31 @@ final class ProductImageService
         Storage::disk('public')->delete($path);
     }
 
-    private function makeSquareJpeg(UploadedFile $file): string
+    private function storeProcessedSquare(UploadedFile $file): string
     {
-        if (! extension_loaded('gd')) {
-            throw new RuntimeException('GD extension is required to process product images.');
+        $contents = $this->makeSquareJpeg($file);
+        $name = 'products/'.Str::uuid()->toString().'.jpg';
+        Storage::disk('public')->put($name, $contents);
+
+        return $name;
+    }
+
+    private function storeOriginal(UploadedFile $file): string
+    {
+        $ext = strtolower($file->getClientOriginalExtension() ?: 'jpg');
+        if (! in_array($ext, ['jpg', 'jpeg', 'png', 'webp'], true)) {
+            $ext = 'jpg';
         }
 
+        $name = 'products/'.Str::uuid()->toString().'.'.$ext;
+
+        Storage::disk('public')->put($name, file_get_contents($file->getRealPath() ?: '') ?: '');
+
+        return $name;
+    }
+
+    private function makeSquareJpeg(UploadedFile $file): string
+    {
         $source = $this->loadImage($file);
         if ($source === false) {
             throw new RuntimeException('Unable to read the uploaded image.');
@@ -43,6 +65,11 @@ final class ProductImageService
 
         $width = imagesx($source);
         $height = imagesy($source);
+        if ($width <= 0 || $height <= 0) {
+            imagedestroy($source);
+            throw new RuntimeException('Invalid image dimensions.');
+        }
+
         $size = min($width, $height);
         $srcX = (int) max(0, floor(($width - $size) / 2));
         $srcY = (int) max(0, floor(($height - $size) / 2));
@@ -52,6 +79,9 @@ final class ProductImageService
             imagedestroy($source);
             throw new RuntimeException('Unable to prepare image canvas.');
         }
+
+        $white = imagecolorallocate($square, 255, 255, 255);
+        imagefilledrectangle($square, 0, 0, self::OUTPUT_SIZE, self::OUTPUT_SIZE, $white);
 
         imagecopyresampled(
             $square,
@@ -80,20 +110,20 @@ final class ProductImageService
         return $binary;
     }
 
-    /** @return resource|false */
+    /** @return \GdImage|resource|false */
     private function loadImage(UploadedFile $file)
     {
         $path = $file->getRealPath();
-        if ($path === false) {
+        if ($path === false || ! is_readable($path)) {
             return false;
         }
 
         $mime = strtolower((string) $file->getMimeType());
 
         return match ($mime) {
-            'image/jpeg', 'image/jpg' => imagecreatefromjpeg($path),
-            'image/png' => imagecreatefrompng($path),
-            'image/webp' => function_exists('imagecreatefromwebp') ? imagecreatefromwebp($path) : false,
+            'image/jpeg', 'image/jpg' => @imagecreatefromjpeg($path),
+            'image/png' => @imagecreatefrompng($path),
+            'image/webp' => function_exists('imagecreatefromwebp') ? @imagecreatefromwebp($path) : false,
             default => false,
         };
     }

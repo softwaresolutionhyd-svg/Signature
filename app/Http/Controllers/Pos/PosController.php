@@ -131,6 +131,14 @@ class PosController extends Controller
             ->orderBy('name')
             ->get(['id', 'name']);
 
+        $productColumns = [
+            'id', 'sku', 'barcode', 'name', 'uom', 'price', 'cost', 'gas_charges', 'extra_costs',
+            'qty_on_hand', 'reorder_level', 'active', 'for_pos', 'for_purchase', 'category_id',
+        ];
+        if (Schema::hasTable('inventory_products') && Schema::hasColumn('inventory_products', 'image_path')) {
+            $productColumns[] = 'image_path';
+        }
+
         $products = InventoryProduct::query()
             ->where(function ($q) use ($resumeProductIds) {
                 $q->where(function ($w) {
@@ -148,7 +156,7 @@ class PosController extends Controller
             ->with(['uomConversions' => fn ($q) => $q->where('active', true)])
             ->with(['category:id,name,parent_id', 'category.parent:id,name'])
             ->withExists(['manufacturingBoms' => fn ($q) => $q->where('active', true)])
-            ->get(['id', 'sku', 'barcode', 'name', 'image_path', 'uom', 'price', 'cost', 'gas_charges', 'extra_costs', 'qty_on_hand', 'reorder_level', 'active', 'for_pos', 'for_purchase', 'category_id']);
+            ->get($productColumns);
 
         // Recent contacts for quick credit selection
         $contacts = Contact::where('active', true)->orderBy('name')->get(['id','name','phone']);
