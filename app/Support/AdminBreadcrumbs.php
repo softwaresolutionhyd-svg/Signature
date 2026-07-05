@@ -51,6 +51,7 @@ final class AdminBreadcrumbs
             str_starts_with($name, 'restaurant-pos.') => [$dash, ['label' => 'Restaurant POS', 'url' => $name === 'restaurant-pos.index' ? null : route('restaurant-pos.index')]],
             str_starts_with($name, 'order-taker.') => [$dash, ['label' => 'Order Taker', 'url' => $name === 'order-taker.index' ? null : route('order-taker.index')]],
             str_starts_with($name, 'kitchen.') => [$dash, ['label' => 'Kitchen', 'url' => $name === 'kitchen.index' ? null : route('kitchen.index')]],
+            str_starts_with($name, 'hr.') => self::hr($name, $dash),
             str_starts_with($name, 'employees.') => self::employees($name, $dash),
             str_starts_with($name, 'notifications.') => [$dash, ['label' => 'Notifications', 'url' => null]],
             str_starts_with($name, 'profile.') => [$dash, ['label' => 'Profile', 'url' => null]],
@@ -221,24 +222,53 @@ final class AdminBreadcrumbs
      * @param  array{label: string, url: ?string}  $dash
      * @return list<array{label: string, url: ?string}>
      */
+    private static function hr(string $name, array $dash): array
+    {
+        $hub = ['label' => 'HR', 'url' => $name === 'hr.index' ? null : route('hr.index')];
+
+        if ($name === 'hr.index') {
+            return [$dash, $hub];
+        }
+
+        if (str_starts_with($name, 'hr.leave.')) {
+            $out = [$dash, $hub, [
+                'label' => 'Leave',
+                'url' => $name === 'hr.leave.index' ? null : route('hr.leave.index'),
+            ]];
+            if ($name === 'hr.leave.create' || $name === 'hr.leave.store') {
+                $out[] = ['label' => 'Request', 'url' => null];
+            } elseif ($name === 'hr.leave.show' || str_contains($name, 'approve') || str_contains($name, 'reject')) {
+                $out[] = ['label' => 'Details', 'url' => null];
+            }
+
+            return $out;
+        }
+
+        return [$dash, $hub];
+    }
+
+    /**
+     * @param  array{label: string, url: ?string}  $dash
+     * @return list<array{label: string, url: ?string}>
+     */
     private static function employees(string $name, array $dash): array
     {
+        $hrHub = ['label' => 'HR', 'url' => route('hr.index')];
+
         if (str_contains($name, '.attendance.')) {
-            $hub = ['label' => 'Employees', 'url' => route('employees.index')];
             $leaf = ['label' => 'Attendance', 'url' => $name === 'employees.attendance.index' ? null : route('employees.attendance.index')];
 
-            return [$dash, $hub, $leaf];
+            return [$dash, $hrHub, $leaf];
         }
 
         if (str_contains($name, '.payroll.')) {
-            $hub = ['label' => 'Employees', 'url' => route('employees.index')];
             $leaf = ['label' => 'Payroll', 'url' => $name === 'employees.payroll.index' ? null : route('employees.payroll.index')];
 
-            return [$dash, $hub, $leaf];
+            return [$dash, $hrHub, $leaf];
         }
 
         if (str_contains($name, '.departments.')) {
-            $out = [$dash, ['label' => 'Employees', 'url' => route('employees.index')], [
+            $out = [$dash, $hrHub, [
                 'label' => 'Departments',
                 'url' => $name === 'employees.departments.index' ? null : route('employees.departments.index'),
             ]];
@@ -248,7 +278,7 @@ final class AdminBreadcrumbs
         }
 
         if (str_contains($name, '.designations.')) {
-            $out = [$dash, ['label' => 'Employees', 'url' => route('employees.index')], [
+            $out = [$dash, $hrHub, [
                 'label' => 'Designations',
                 'url' => $name === 'employees.designations.index' ? null : route('employees.designations.index'),
             ]];
@@ -257,7 +287,7 @@ final class AdminBreadcrumbs
             return $out;
         }
 
-        $out = [$dash, ['label' => 'Employees', 'url' => $name === 'employees.index' ? null : route('employees.index')]];
+        $out = [$dash, $hrHub, ['label' => 'Employees', 'url' => $name === 'employees.index' ? null : route('employees.index')]];
         if ($name === 'employees.index') {
             return $out;
         }

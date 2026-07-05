@@ -339,7 +339,7 @@
             </div>
             <div class="col-lg-6">
                 <div class="card shadow-sm h-100">
-                    <div class="card-header bg-white fw-semibold"><i class="bi bi-people me-1"></i> Employees</div>
+                    <div class="card-header bg-white fw-semibold"><i class="bi bi-people me-1"></i> HR</div>
                     <div class="card-body">
                         <div class="row g-3">
                             <div class="col-md-6">
@@ -351,6 +351,16 @@
                                 <label class="form-label" for="employees_ref_per_page">Departments &amp; designations — rows per page</label>
                                 <input type="number" class="form-control" id="employees_ref_per_page" name="employees_ref_per_page" min="5" max="100" required
                                        value="{{ old('employees_ref_per_page', $settings['employees_ref_per_page'] ?? 20) }}">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label" for="hr_leave_per_page">Leave requests — rows per page</label>
+                                <input type="number" class="form-control" id="hr_leave_per_page" name="hr_leave_per_page" min="5" max="100" required
+                                       value="{{ old('hr_leave_per_page', $settings['hr_leave_per_page'] ?? 20) }}">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label" for="hr_annual_leave_days">Annual leave days per employee (0 = no limit)</label>
+                                <input type="number" class="form-control" id="hr_annual_leave_days" name="hr_annual_leave_days" min="0" max="365" required
+                                       value="{{ old('hr_annual_leave_days', $settings['hr_annual_leave_days'] ?? 14) }}">
                             </div>
                         </div>
                     </div>

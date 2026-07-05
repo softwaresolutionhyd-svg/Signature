@@ -62,6 +62,11 @@ class Employee extends Model
         return $this->hasMany(PayrollEntry::class);
     }
 
+    public function leaveRequests(): HasMany
+    {
+        return $this->hasMany(LeaveRequest::class);
+    }
+
     public function scopeWaiters(Builder $query): Builder
     {
         return $query->whereHas('designation', function (Builder $designationQuery) {

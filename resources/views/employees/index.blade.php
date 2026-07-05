@@ -4,6 +4,8 @@
 @section('page_title', 'Employees')
 
 @section('content')
+    @include('hr.partials.subnav')
+
     @php($u = auth()->user())
     @if (session('status'))
         <div class="alert alert-success">{{ session('status') }}</div>
@@ -23,7 +25,7 @@
             </form>
 
             <div class="d-flex flex-wrap gap-2">
-                @if($u->canViewModule('employees'))
+                @if($u->canViewModule('hr'))
                     <a href="{{ route('employees.attendance.index') }}" class="btn btn-outline-secondary">
                         <i class="bi bi-calendar-check me-1"></i> Attendance
                     </a>
@@ -33,7 +35,7 @@
                         <i class="bi bi-cash-stack me-1"></i> Payroll
                     </a>
                 @endif
-                @if($u->moduleAllows('employees', 'create'))
+                @if($u->moduleAllows('hr', 'create'))
                     <a href="{{ route('employees.create') }}" class="btn btn-primary">
                         <i class="bi bi-plus-circle me-1"></i> New Employee
                     </a>
@@ -53,7 +55,7 @@
                     <th>Phone</th>
                     <th>Join date</th>
                     <th>Status</th>
-                    @if($u->moduleAllows('employees', 'edit') || $u->moduleAllows('employees', 'delete'))
+                    @if($u->moduleAllows('hr', 'edit') || $u->moduleAllows('hr', 'delete'))
                         <th class="text-end">Actions</th>
                     @endif
                 </tr>
@@ -75,12 +77,12 @@
                                 <span class="badge text-bg-secondary">Inactive</span>
                             @endif
                         </td>
-                        @if($u->moduleAllows('employees', 'edit') || $u->moduleAllows('employees', 'delete'))
+                        @if($u->moduleAllows('hr', 'edit') || $u->moduleAllows('hr', 'delete'))
                         <td class="text-end">
-                            @if($u->moduleAllows('employees', 'edit'))
+                            @if($u->moduleAllows('hr', 'edit'))
                                 <a class="btn btn-sm btn-outline-primary" href="{{ route('employees.edit', $e) }}">Edit</a>
                             @endif
-                            @if($u->moduleAllows('employees', 'delete'))
+                            @if($u->moduleAllows('hr', 'delete'))
                                 <form class="d-inline" method="POST" action="{{ route('employees.destroy', $e) }}"
                                       onsubmit="return confirm('Delete employee?');">
                                     @csrf
@@ -92,7 +94,7 @@
                         @endif
                     </tr>
                 @empty
-                    <tr><td colspan="{{ ($u->moduleAllows('employees', 'edit') || $u->moduleAllows('employees', 'delete')) ? 9 : 8 }}" class="text-center text-secondary py-4">No employees yet.</td></tr>
+                    <tr><td colspan="{{ ($u->moduleAllows('hr', 'edit') || $u->moduleAllows('hr', 'delete')) ? 9 : 8 }}" class="text-center text-secondary py-4">No employees yet.</td></tr>
                 @endforelse
                 </tbody>
             </table>

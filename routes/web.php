@@ -25,6 +25,8 @@ use App\Http\Controllers\Employee\DepartmentController;
 use App\Http\Controllers\Employee\DesignationController;
 use App\Http\Controllers\Employee\EmployeeController;
 use App\Http\Controllers\Employee\PayrollController;
+use App\Http\Controllers\Hr\HrController;
+use App\Http\Controllers\Hr\LeaveRequestController;
 use App\Http\Controllers\Expense\ExpenseController;
 use App\Http\Controllers\Expense\ExpenseCategoryController;
 use App\Http\Controllers\Accounts\AccountsController;
@@ -259,6 +261,18 @@ Route::middleware(['auth', 'employee', 'passwordChanged'])->group(function () {
     Route::prefix('order-status')->name('order-status.')->middleware('moduleAccess')->group(function () {
         Route::get('/', [\App\Http\Controllers\OrderStatus\OrderStatusController::class, 'index'])->name('index');
         Route::get('/board', [\App\Http\Controllers\OrderStatus\OrderStatusController::class, 'board'])->name('board');
+    });
+
+    Route::prefix('hr')->name('hr.')->middleware('moduleAccess')->group(function () {
+        Route::get('/', [HrController::class, 'index'])->name('index');
+
+        Route::get('/leave', [LeaveRequestController::class, 'index'])->name('leave.index');
+        Route::get('/leave/create', [LeaveRequestController::class, 'create'])->name('leave.create');
+        Route::post('/leave', [LeaveRequestController::class, 'store'])->name('leave.store');
+        Route::get('/leave/{leaveRequest}', [LeaveRequestController::class, 'show'])->name('leave.show');
+        Route::post('/leave/{leaveRequest}/approve', [LeaveRequestController::class, 'approve'])->name('leave.approve');
+        Route::post('/leave/{leaveRequest}/reject', [LeaveRequestController::class, 'reject'])->name('leave.reject');
+        Route::delete('/leave/{leaveRequest}', [LeaveRequestController::class, 'destroy'])->name('leave.destroy');
     });
 
     Route::prefix('employees')->name('employees.')->group(function () {

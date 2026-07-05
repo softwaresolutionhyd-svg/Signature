@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Models\User;
+use App\Support\ModuleAccess;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -48,6 +49,8 @@ class EnsureUserHasModuleAccess
             $module = Str::before($routeName, '.');
         }
 
+        $module = ModuleAccess::permissionModuleKey($module);
+
         if ($module === '') {
             return $next($request);
         }
@@ -61,18 +64,18 @@ class EnsureUserHasModuleAccess
 
         $action = $this->resolveAction($request);
 
-        $modPerm = (array) ($permissions[$module] ?? []);
-        if (!empty($modPerm['all'])) {
-            return $next($request);
+        foreach (ModuleAccess::permissionKeysFor($module) as $permKey) {
+            $modPerm = (array) ($permissions[$permKey] ?? []);
+            if (! empty($modPerm['all'])) {
+                return $next($request);
+            }
+
+            if ((bool) ($modPerm[$action] ?? false)) {
+                return $next($request);
+            }
         }
 
-        $allowed = (bool) ($modPerm[$action] ?? false);
-
-        if (!$allowed) {
-            abort(403);
-        }
-
-        return $next($request);
+        abort(403);
     }
 
     private function resolveAction(Request $request): string

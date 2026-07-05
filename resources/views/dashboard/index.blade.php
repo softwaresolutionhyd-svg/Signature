@@ -162,8 +162,8 @@
         </a>
         @endif
 
-        @if($u->canViewModule('employees'))
-        <a class="odoo-app" href="{{ route('employees.index') }}">
+        @if($u->canViewModule('hr'))
+        <a class="odoo-app" href="{{ route('hr.index') }}">
             <div class="odoo-icon" style="--icon-color:#ec4899;">
                 <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <circle cx="16" cy="13" r="5" stroke="currentColor" stroke-width="2.5"/>
@@ -172,7 +172,7 @@
                     <path d="M34 30c0-3.866-1.79-7-4-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity="0.7"/>
                 </svg>
             </div>
-            <span class="odoo-label">Employees</span>
+            <span class="odoo-label">HR</span>
         </a>
         @endif
 

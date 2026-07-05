@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\ModuleAccess;
 use Illuminate\Database\Eloquent\Casts\AsEncryptedArrayObject;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
@@ -109,15 +110,22 @@ class User extends Authenticatable
         if ($this->bypassesModulePermissions()) {
             return true;
         }
-        if (!in_array($module, ModuleAccess::moduleKeys(), true)) {
+        if (! in_array($module, ModuleAccess::moduleKeys(), true)
+            && ! in_array($module, ['employees'], true)) {
             return false;
         }
-        $p = (array) data_get($this->permissions ?? [], $module, []);
-        if (!empty($p['all'])) {
-            return true;
+
+        foreach (ModuleAccess::permissionKeysFor($module) as $key) {
+            $p = (array) data_get($this->permissions ?? [], $key, []);
+            if (! empty($p['all'])) {
+                return true;
+            }
+            if ((bool) ($p[$action] ?? false)) {
+                return true;
+            }
         }
 
-        return (bool) ($p[$action] ?? false);
+        return false;
     }
 
     public function canViewModule(string $module): bool
@@ -146,24 +154,27 @@ class User extends Authenticatable
         if ($this->bypassesModulePermissions()) {
             return true;
         }
-        $p = (array) data_get($this->permissions ?? [], $module, []);
-        if (!empty($p['all'])) {
-            return true;
-        }
-        foreach ($p as $k => $v) {
-            if ($k !== 'all' && $v) {
+
+        foreach (ModuleAccess::permissionKeysFor($module) as $key) {
+            $p = (array) data_get($this->permissions ?? [], $key, []);
+            if (! empty($p['all'])) {
                 return true;
+            }
+            foreach ($p as $k => $v) {
+                if ($k !== 'all' && $v) {
+                    return true;
+                }
             }
         }
 
         return false;
     }
 
-    /** Employees create/edit/delete — team attendance mark / change. */
+    /** HR create/edit/delete — team attendance mark / change. */
     public function canManageTeamAttendance(): bool
     {
-        return $this->moduleAllows('employees', 'create')
-            || $this->moduleAllows('employees', 'edit')
-            || $this->moduleAllows('employees', 'delete');
+        return $this->moduleAllows('hr', 'create')
+            || $this->moduleAllows('hr', 'edit')
+            || $this->moduleAllows('hr', 'delete');
     }
 }

@@ -66,6 +66,8 @@ class SettingsController extends Controller
         'accounts_auto_journal'             => '1',
         'employees_per_page'                => '20',
         'employees_ref_per_page'            => '20',
+        'hr_leave_per_page'                 => '20',
+        'hr_annual_leave_days'              => '14',
         'product_extra_cost_fields'         => '[{"key":"gas_charges","label":"Gas charges","rate":20,"operator":"plus","base":"cost","target":"effective_cost"}]',
     ];
 
@@ -118,6 +120,8 @@ class SettingsController extends Controller
             'accounts_auto_journal' => ['nullable', 'boolean'],
             'employees_per_page' => ['required', 'integer', 'min:5', 'max:100'],
             'employees_ref_per_page' => ['required', 'integer', 'min:5', 'max:100'],
+            'hr_leave_per_page' => ['required', 'integer', 'min:5', 'max:100'],
+            'hr_annual_leave_days' => ['required', 'integer', 'min:0', 'max:365'],
             'product_extra_cost_fields' => ['nullable', 'array', 'max:20'],
             'product_extra_cost_fields.*.label' => ['nullable', 'string', 'max:60'],
             'product_extra_cost_fields.*.rate' => ['nullable', 'numeric', 'min:0', 'max:999999'],

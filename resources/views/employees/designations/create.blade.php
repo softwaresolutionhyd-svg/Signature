@@ -4,6 +4,8 @@
 @section('page_title', 'Employees / Designations / New')
 
 @section('content')
+    @include('hr.partials.subnav')
+
     <div class="card shadow-sm">
         <div class="card-header bg-white d-flex align-items-center justify-content-between">
             <div class="fw-semibold">New designation</div>

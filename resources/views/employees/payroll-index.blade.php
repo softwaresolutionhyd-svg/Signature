@@ -3,6 +3,8 @@
 @section('title', 'Payroll — ' . config('app.name'))
 
 @section('content')
+@include('hr.partials.subnav')
+
     @if (session('status'))
         <div class="alert alert-success">{{ session('status') }}</div>
     @endif
