@@ -10,7 +10,6 @@ use App\Models\Setting;
 use App\Models\User;
 use App\Support\ActivityLogger;
 use App\Support\AppPasswordRules;
-use App\Support\CompanySettings;
 use App\Support\ModuleAccess;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -76,8 +75,6 @@ class EmployeeController extends Controller
             'account_password' => AppPasswordRules::optionalConfirmed(),
             'permissions' => ['nullable', 'array'],
         ]);
-
-        $this->ensurePhoneForLoginAccount($data, $cid);
 
         $data['active'] = (bool) ($data['active'] ?? false);
         $data['salary'] = $data['salary'] ?? 0;
@@ -165,8 +162,6 @@ class EmployeeController extends Controller
             'account_password' => AppPasswordRules::optionalConfirmed(),
             'permissions' => ['nullable', 'array'],
         ]);
-
-        $this->ensurePhoneForLoginAccount($data, $cid, $employee);
 
         $data['active'] = (bool) ($data['active'] ?? false);
         $data['salary'] = $data['salary'] ?? 0;
@@ -271,29 +266,5 @@ class EmployeeController extends Controller
     private function normalizePermissions(array $permissions): array
     {
         return ModuleAccess::normalize($permissions);
-    }
-
-    /**
-     * @param  array<string, mixed>  $data
-     */
-    private function ensurePhoneForLoginAccount(array $data, int $companyId, ?Employee $employee = null): void
-    {
-        if (! CompanySettings::otpLoginEnabled($companyId)) {
-            return;
-        }
-
-        $hasLoginAccount = ! empty($data['account_username'])
-            || ! empty($data['account_password'])
-            || ($employee !== null && $employee->user_id);
-
-        if (! $hasLoginAccount) {
-            return;
-        }
-
-        if (trim((string) ($data['phone'] ?? '')) === '') {
-            throw \Illuminate\Validation\ValidationException::withMessages([
-                'phone' => 'Login account ke sath mobile number zaroori hai (OTP verification ke liye).',
-            ]);
-        }
     }
 }
