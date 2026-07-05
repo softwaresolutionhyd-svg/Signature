@@ -1082,12 +1082,14 @@ class ProductController extends Controller
     /**
      * @return array{
      *     departments: \Illuminate\Support\Collection<int, InventoryDepartment>,
-     *     selectedDepartmentIds: list<string>
+     *     selectedDepartmentIds: list<string>,
+     *     defaultWarehouseId: int
      * }
      */
     private function departmentFormDataForProduct(?InventoryProduct $product = null): array
     {
         $warehouse = $this->stockService->ensureWarehouse();
+        $warehouseId = (int) $warehouse->id;
 
         $departments = InventoryDepartment::query()
             ->where('active', true)
@@ -1096,24 +1098,33 @@ class ProductController extends Controller
             ->get(['id', 'name', 'is_warehouse']);
 
         $selectedDepartmentIds = old('department_ids');
-        if ($selectedDepartmentIds === null && $product) {
-            $product->loadMissing('departments');
-            $selectedDepartmentIds = $product->departments->pluck('id')->all();
-            if ($selectedDepartmentIds === [] && $product->department_id) {
-                $selectedDepartmentIds = [(int) $product->department_id];
+        $usedOldInput = is_array($selectedDepartmentIds);
+
+        if (! $usedOldInput) {
+            if ($product) {
+                $product->loadMissing('departments');
+                $selectedDepartmentIds = $product->departments->pluck('id')->all();
+                if ($selectedDepartmentIds === [] && $product->department_id) {
+                    $selectedDepartmentIds = [(int) $product->department_id];
+                }
+            } else {
+                $selectedDepartmentIds = [];
             }
         }
-        if ($selectedDepartmentIds === null && ! $product) {
-            $selectedDepartmentIds = [(int) $warehouse->id];
-        }
 
-        if (! is_array($selectedDepartmentIds)) {
-            $selectedDepartmentIds = [];
+        $selectedDepartmentIds = array_values(array_unique(array_filter(
+            array_map('intval', (array) $selectedDepartmentIds),
+            fn (int $id) => $id > 0
+        )));
+
+        if ((! $usedOldInput || $selectedDepartmentIds === []) && ! in_array($warehouseId, $selectedDepartmentIds, true)) {
+            array_unshift($selectedDepartmentIds, $warehouseId);
         }
 
         return [
             'departments' => $departments,
             'selectedDepartmentIds' => array_map('strval', $selectedDepartmentIds),
+            'defaultWarehouseId' => $warehouseId,
         ];
     }
 

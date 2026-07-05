@@ -38,6 +38,8 @@
     $selectedSubCategoryId = old('sub_category_id', $categorySelection['sub_category_id'] ?? '');
     $departments = $departments ?? collect();
     $selectedDepartmentIds = $selectedDepartmentIds ?? [];
+    $defaultWarehouseId = isset($defaultWarehouseId) ? (string) $defaultWarehouseId : null;
+    $hasOldDepartmentInput = session()->hasOldInput('department_ids');
 @endphp
 
 <div class="row g-3">
@@ -92,10 +94,18 @@
         <div class="border rounded p-2 bg-white @error('department_ids') border-danger @enderror @error('department_ids.*') border-danger @enderror"
              style="max-height:140px;overflow-y:auto;">
             @forelse($departments as $dep)
+                @php
+                    $depId = (string) $dep->id;
+                    $isWarehouseDefault = $defaultWarehouseId !== null
+                        && $depId === $defaultWarehouseId
+                        && ($dep->is_warehouse ?? false);
+                    $isDepartmentChecked = in_array($depId, $selectedDepartmentIds, true)
+                        || ($isWarehouseDefault && ! $hasOldDepartmentInput);
+                @endphp
                 <div class="form-check">
                     <input class="form-check-input" type="checkbox" name="department_ids[]" value="{{ $dep->id }}"
                            id="productDept{{ $dep->id }}"
-                           @checked(in_array((string) $dep->id, $selectedDepartmentIds, true))>
+                           @checked($isDepartmentChecked)>
                     <label class="form-check-label small" for="productDept{{ $dep->id }}">
                         {{ $dep->name }}
                         @if($dep->is_warehouse ?? false)
