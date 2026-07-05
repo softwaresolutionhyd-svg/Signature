@@ -16,9 +16,10 @@
     </div>
 
     <div class="col-12 col-md-6">
-        <label class="form-label">Email</label>
+        <label class="form-label">Contact email <span class="text-secondary fw-normal">(optional)</span></label>
         <input type="email" name="email" value="{{ old('email', $employee->email ?? '') }}"
-               class="form-control @error('email') is-invalid @enderror" maxlength="200">
+               class="form-control @error('email') is-invalid @enderror" maxlength="200"
+               placeholder="Personal / work email">
         @error('email')<div class="invalid-feedback">{{ $message }}</div>@enderror
     </div>
 
@@ -91,13 +92,14 @@
             <div class="fw-semibold mb-2">Login Account (Username / Password)</div>
             <div class="row g-3">
                 <div class="col-12 col-md-6">
-                    <label class="form-label">Username (email)</label>
-                    <input type="email" name="account_username"
-                           value="{{ old('account_username', $employee->user?->email ?? '') }}"
-                           class="form-control @error('account_username') is-invalid @enderror" maxlength="200"
-                           placeholder="employee@example.com">
+                    <label class="form-label">Username</label>
+                    <input type="text" name="account_username"
+                           value="{{ old('account_username', \App\Support\LoginUsername::display($employee->user?->email)) }}"
+                           class="form-control @error('account_username') is-invalid @enderror" maxlength="40"
+                           placeholder="e.g. sheraz" autocomplete="off"
+                           pattern="[A-Za-z0-9._-]{3,40}">
                     @error('account_username')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                    <div class="small text-secondary mt-1">Agar username/password set karoge to employee login kar sakta hai.</div>
+                    <div class="small text-secondary mt-1">Sirf username — koi @example.com nahi. Login ke liye yehi use hoga.</div>
                 </div>
                 <div class="col-12 col-md-3">
                     <label class="form-label">Password</label>

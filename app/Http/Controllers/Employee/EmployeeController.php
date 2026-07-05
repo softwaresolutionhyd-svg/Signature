@@ -10,6 +10,7 @@ use App\Models\Setting;
 use App\Models\User;
 use App\Support\ActivityLogger;
 use App\Support\AppPasswordRules;
+use App\Support\LoginUsername;
 use App\Support\ModuleAccess;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -27,7 +28,9 @@ class EmployeeController extends Controller
                     $sub->where('employee_no', 'like', "%{$q}%")
                         ->orWhere('name', 'like', "%{$q}%")
                         ->orWhere('email', 'like', "%{$q}%")
-                        ->orWhere('phone', 'like', "%{$q}%");
+                        ->orWhere('phone', 'like', "%{$q}%")
+                        ->orWhereHas('user', fn ($u) => $u->where('email', 'like', "%{$q}%")
+                            ->orWhere('email', 'like', LoginUsername::toStoredValue($q).'%'));
                 });
             })
             ->orderBy('active', 'desc')
@@ -71,7 +74,7 @@ class EmployeeController extends Controller
             'address' => ['nullable', 'string', 'max:255'],
             'active' => ['nullable', 'boolean'],
 
-            'account_username' => ['nullable', 'email', 'max:200', 'unique:users,email'],
+            'account_username' => LoginUsername::rules(),
             'account_password' => AppPasswordRules::optionalConfirmed(),
             'permissions' => ['nullable', 'array'],
         ]);
@@ -84,9 +87,10 @@ class EmployeeController extends Controller
         $userId = null;
         $createdUser = null;
         if (! empty($data['account_username']) && ! empty($data['account_password'])) {
+            $loginUsername = LoginUsername::toStoredValue($data['account_username']);
             $createdUser = User::create([
                 'name' => $data['name'],
-                'email' => $data['account_username'],
+                'email' => $loginUsername,
                 'password' => $data['account_password'],
                 'role' => 'user',
                 'company_id' => $cid,
@@ -158,7 +162,7 @@ class EmployeeController extends Controller
             'address' => ['nullable', 'string', 'max:255'],
             'active' => ['nullable', 'boolean'],
 
-            'account_username' => ['nullable', 'email', 'max:200', Rule::unique('users', 'email')->ignore($employee->user_id)],
+            'account_username' => LoginUsername::rules($employee->user_id),
             'account_password' => AppPasswordRules::optionalConfirmed(),
             'permissions' => ['nullable', 'array'],
         ]);
@@ -172,11 +176,12 @@ class EmployeeController extends Controller
         $user = $employee->user;
 
         if (! empty($data['account_username'])) {
+            $loginUsername = LoginUsername::toStoredValue($data['account_username']);
             if (! $user) {
                 $usingDefaultPassword = empty($data['account_password']);
                 $user = User::create([
                     'name' => $data['name'],
-                    'email' => $data['account_username'],
+                    'email' => $loginUsername,
                     'password' => $data['account_password'] ?: 'password123',
                     'role' => 'user',
                     'company_id' => $cid,
@@ -187,7 +192,7 @@ class EmployeeController extends Controller
             } else {
                 $user->update([
                     'name' => $data['name'],
-                    'email' => $data['account_username'],
+                    'email' => $loginUsername,
                     'permissions' => $this->normalizePermissions($request->input('permissions', $user->permissions ?? [])),
                 ]);
             }
@@ -240,7 +245,7 @@ class EmployeeController extends Controller
 
         ActivityLogger::log('employee.password_reset', 'Employee login password reset', $employee);
 
-        return redirect()->back()->with('status', 'Password updated for '.$employee->user->email.'.');
+        return redirect()->back()->with('status', 'Password updated for '.LoginUsername::display($employee->user->email).'.');
     }
 
     public function destroy(Employee $employee)

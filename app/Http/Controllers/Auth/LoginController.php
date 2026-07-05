@@ -135,7 +135,8 @@ class LoginController extends Controller
         }
 
         $user = User::query()
-            ->whereRaw("LOWER(SUBSTRING_INDEX(email, '@', 1)) = ?", [mb_strtolower($login)])
+            ->whereRaw('LOWER(email) = ?', [mb_strtolower($login)])
+            ->orWhereRaw("LOWER(SUBSTRING_INDEX(email, '@', 1)) = ?", [mb_strtolower($login)])
             ->orWhereRaw('LOWER(name) = ?', [mb_strtolower($login)])
             ->first();
 

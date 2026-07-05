@@ -23,7 +23,7 @@
         <div class="card shadow-sm mt-4">
             <div class="card-header bg-white fw-semibold">Reset staff password</div>
             <div class="card-body">
-                <p class="text-muted small mb-3">Login: <strong>{{ $employee->user->email }}</strong></p>
+                <p class="text-muted small mb-3">Login username: <strong>{{ \App\Support\LoginUsername::display($employee->user->email) }}</strong></p>
                 <form method="POST" action="{{ route('employees.reset-password', $employee) }}">
                     @csrf
                     <div class="row g-3 align-items-end">

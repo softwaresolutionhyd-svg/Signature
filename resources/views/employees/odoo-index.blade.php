@@ -23,7 +23,7 @@
                         <span class="input-group-text">
                             <i class="bi bi-search"></i>
                         </span>
-                        <input type="text" name="q" value="{{ $q }}" class="form-control" placeholder="Search employee no, name, email, phone...">
+                        <input type="text" name="q" value="{{ $q }}" class="form-control" placeholder="Search employee no, name, username, phone...">
                     </div>
                 </div>
                 <div class="col-md-2">
@@ -52,7 +52,7 @@
                         <th><i class="bi bi-person me-1"></i> Name</th>
                         <th><i class="bi bi-building me-1"></i> Department</th>
                         <th><i class="bi bi-briefcase me-1"></i> Designation</th>
-                        <th><i class="bi bi-envelope me-1"></i> Email</th>
+                        <th><i class="bi bi-person-badge me-1"></i> Username</th>
                         <th><i class="bi bi-telephone me-1"></i> Phone</th>
                         <th><i class="bi bi-toggle-on me-1"></i> Status</th>
                         <th><i class="bi bi-gear me-1"></i> Actions</th>
@@ -85,7 +85,7 @@
                                     {{ $employee->designation?->name ?? '—' }}
                                 </span>
                             </td>
-                            <td>{{ $employee->email ?? '—' }}</td>
+                            <td>{{ $employee->user?->loginUsername() ?? '—' }}</td>
                             <td>{{ $employee->phone ?? '—' }}</td>
                             <td>
                                 @if($employee->active)

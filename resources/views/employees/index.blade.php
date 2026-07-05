@@ -17,7 +17,7 @@
     <div class="card shadow-sm">
         <div class="card-header bg-white d-flex flex-wrap gap-2 align-items-center justify-content-between">
             <form class="d-flex gap-2" method="GET" action="{{ route('employees.index') }}">
-                <input type="text" name="q" value="{{ $q }}" class="form-control" placeholder="Search employee no, name, email, phone..." style="max-width: 360px;">
+                <input type="text" name="q" value="{{ $q }}" class="form-control" placeholder="Search employee no, name, username, phone..." style="max-width: 360px;">
                 <button class="btn btn-outline-primary" type="submit"><i class="bi bi-search me-1"></i> Search</button>
                 @if($q !== '')
                     <a class="btn btn-outline-secondary" href="{{ route('employees.index') }}">Clear</a>
@@ -51,7 +51,7 @@
                     <th>Name</th>
                     <th>Department</th>
                     <th>Designation</th>
-                    <th>Email</th>
+                    <th>Username</th>
                     <th>Phone</th>
                     <th>Join date</th>
                     <th>Status</th>
@@ -67,7 +67,7 @@
                         <td class="fw-semibold">{{ $e->name }}</td>
                         <td class="text-secondary">{{ $e->department?->name ?? $e->department ?? '—' }}</td>
                         <td class="text-secondary">{{ $e->designation?->name ?? $e->designation ?? '—' }}</td>
-                        <td class="text-secondary">{{ $e->user?->email ?: ($e->email ?: '—') }}</td>
+                        <td class="text-secondary">{{ $e->user?->loginUsername() ?: '—' }}</td>
                         <td class="text-secondary">{{ $e->phone ?: '—' }}</td>
                         <td class="text-secondary">{{ optional($e->join_date)->format('Y-m-d') ?: '—' }}</td>
                         <td>

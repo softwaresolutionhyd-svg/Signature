@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Support\ModuleAccess;
+use App\Support\LoginUsername;
 use Illuminate\Database\Eloquent\Casts\AsEncryptedArrayObject;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
@@ -65,6 +66,12 @@ class User extends Authenticatable
     {
         return $this->two_factor_confirmed_at !== null
             && filled($this->two_factor_secret);
+    }
+
+    /** Plain login username shown in UI (stored in email column). */
+    public function loginUsername(): ?string
+    {
+        return LoginUsername::display($this->email);
     }
 
     public function company(): \Illuminate\Database\Eloquent\Relations\BelongsTo
