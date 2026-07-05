@@ -323,7 +323,7 @@
                     </tbody>
                 </table>
             </div>
-            @if($employee && auth()->user()->moduleAllows('hr', 'create'))
+            @if($employee && (auth()->user()->moduleAllows('hr', 'create') || auth()->user()->bypassesModulePermissions()))
             <div class="card-footer bg-white">
                 <a href="{{ route('hr.leave.create') }}" class="btn btn-sm btn-success">
                     <i class="bi bi-plus-circle me-1"></i> Request leave
