@@ -6,7 +6,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="{{ asset('css/restaurant-pos.css') }}?v=30">
+<link rel="stylesheet" href="{{ asset('css/restaurant-pos.css') }}?v=31">
 @endpush
 
 @section('content')
@@ -252,6 +252,41 @@
     </div>
 </div>
 
+<div class="modal fade" id="rpPayModal" tabindex="-1" aria-labelledby="rpPayModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered rp-pay-modal-dialog">
+        <div class="modal-content rp-pay-modal">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold" id="rpPayModalLabel">Cash Payment</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body pt-2">
+                <div class="rp-pay-modal-total">
+                    <span class="rp-pay-modal-label">Total Amount</span>
+                    <span class="rp-pay-modal-amount" id="rpPayModalTotal">0.00</span>
+                </div>
+                <div class="mb-3">
+                    <label for="rpCashTendered" class="form-label fw-semibold mb-1">Customer ne diye</label>
+                    <div class="input-group input-group-lg">
+                        <span class="input-group-text">Rs.</span>
+                        <input type="number" class="form-control" id="rpCashTendered" min="0" step="0.01" inputmode="decimal" placeholder="0.00" autocomplete="off">
+                    </div>
+                </div>
+                <div class="rp-pay-modal-return">
+                    <span class="rp-pay-modal-label">Return</span>
+                    <span class="rp-pay-modal-change" id="rpCashChange">0.00</span>
+                </div>
+                <p class="text-danger small mb-0 mt-2 d-none" id="rpCashInsufficient">Amount kam hai — bill se zyada ya barabar enter karein.</p>
+            </div>
+            <div class="modal-footer border-0 pt-0">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-rp-primary" id="rpPayModalConfirm" disabled>
+                    <i class="bi bi-printer"></i> Pay &amp; Print Bill
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <form id="rpSubmitForm" method="POST" action="{{ route('restaurant-pos.checkout') }}" class="d-none">
     @csrf
     <input type="hidden" name="type" value="sale">
@@ -270,6 +305,8 @@
     <input type="hidden" name="payments" value="">
     <input type="hidden" name="bill_tax_percent" value="0">
     <input type="hidden" name="bill_discount_percent" value="0">
+    <input type="hidden" name="cash_tendered" value="">
+    <input type="hidden" name="cash_change" value="">
 </form>
 @endsection
 
@@ -301,5 +338,5 @@
 <script>
 window.RESTAURANT_POS_BOOTSTRAP = @json($restaurantBootstrap);
 </script>
-<script src="{{ asset('js/restaurant-pos-app.js') }}?v=25"></script>
+<script src="{{ asset('js/restaurant-pos-app.js') }}?v=26"></script>
 @endsection

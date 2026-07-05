@@ -24,6 +24,7 @@
     let selectedContactId = null;
     let resumeOrderId = boot.resumeOrderId || null;
     let selectedMenuCategoryId = null;
+    let payModalInstance = null;
 
     const $ = (sel) => document.querySelector(sel);
     const $$ = (sel) => Array.from(document.querySelectorAll(sel));
@@ -669,8 +670,85 @@
         form.querySelector('[name="bill_tax_percent"]').value = '0';
         form.querySelector('[name="bill_discount_percent"]').value = posShowDiscount ? String(getBillDiscountPercent()) : '0';
         form.querySelector('[name="resume_order_id"]').value = resumeOrderId ? String(resumeOrderId) : '';
+        form.querySelector('[name="cash_tendered"]').value = '';
+        form.querySelector('[name="cash_change"]').value = '';
         form.action = mode === 'hold' ? routes.hold : routes.checkout;
         return true;
+    }
+
+    function getPayModal() {
+        const el = $('#rpPayModal');
+        if (!el || !window.bootstrap?.Modal) return null;
+        if (!payModalInstance) {
+            payModalInstance = new window.bootstrap.Modal(el, { backdrop: 'static', keyboard: true });
+        }
+        return payModalInstance;
+    }
+
+    function updatePayModalAmounts() {
+        const grand = calcCartTotals().grand;
+        const tendered = Number($('#rpCashTendered')?.value || 0);
+        const change = Math.max(0, Math.round((tendered - grand) * 100) / 100);
+        const ok = tendered >= grand - 0.001;
+
+        if ($('#rpPayModalTotal')) $('#rpPayModalTotal').textContent = fmtMoney(grand);
+        if ($('#rpCashChange')) $('#rpCashChange').textContent = fmtMoney(change);
+        if ($('#rpPayModalConfirm')) $('#rpPayModalConfirm').disabled = !ok;
+        $('#rpCashInsufficient')?.classList.toggle('d-none', ok || tendered <= 0);
+    }
+
+    function openPayModal() {
+        if (!prepareSubmit('checkout')) return;
+
+        if (isCreditMode) {
+            submitOrder('checkout');
+            return;
+        }
+
+        const payMethod = $('#rpPayMethod')?.value || 'cash';
+        if (payMethod !== 'cash') {
+            submitOrder('checkout');
+            return;
+        }
+
+        const grand = calcCartTotals().grand;
+        const input = $('#rpCashTendered');
+        if (input) {
+            input.value = '';
+        }
+        updatePayModalAmounts();
+
+        const modal = getPayModal();
+        if (!modal) {
+            submitOrder('checkout');
+            return;
+        }
+        modal.show();
+        setTimeout(() => {
+            input?.focus();
+            input?.select();
+        }, 280);
+    }
+
+    function confirmPayModal() {
+        if (!prepareSubmit('checkout')) return;
+
+        const grand = calcCartTotals().grand;
+        const tendered = Number($('#rpCashTendered')?.value || 0);
+        if (tendered < grand - 0.001) {
+            updatePayModalAmounts();
+            return;
+        }
+
+        const change = Math.max(0, Math.round((tendered - grand) * 100) / 100);
+        const form = $('#rpSubmitForm');
+        if (!form) return;
+
+        form.querySelector('[name="cash_tendered"]').value = String(tendered);
+        form.querySelector('[name="cash_change"]').value = String(change);
+
+        getPayModal()?.hide();
+        form.submit();
     }
 
     function upsertPendingBill(order, updated) {
@@ -795,7 +873,17 @@
         });
         $('#rpHoldBtn')?.addEventListener('click', () => submitHoldOrder());
         $('#rpWhatsappBtn')?.addEventListener('click', () => openDeliveryWhatsapp());
-        $('#rpPayBtn')?.addEventListener('click', () => submitOrder('checkout'));
+        $('#rpPayBtn')?.addEventListener('click', () => openPayModal());
+        $('#rpPayModalConfirm')?.addEventListener('click', () => confirmPayModal());
+        $('#rpCashTendered')?.addEventListener('input', updatePayModalAmounts);
+        $('#rpCashTendered')?.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                if (!$('#rpPayModalConfirm')?.disabled) {
+                    confirmPayModal();
+                }
+            }
+        });
         $('#rpTabPending')?.addEventListener('click', () => setOrderListMode('pending'));
         $('#rpTabPaid')?.addEventListener('click', () => setOrderListMode('paid'));
         $('#rpTabMenu')?.addEventListener('click', () => togglePanelView('menu'));

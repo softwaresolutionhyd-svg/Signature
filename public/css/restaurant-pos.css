@@ -1518,3 +1518,74 @@ body.admin-app-body:has(.restaurant-pos-app) .restaurant-pos-app .rp-checkout-fo
         justify-content: flex-start;
     }
 }
+
+.rp-pay-modal-dialog {
+    max-width: 420px;
+}
+
+.rp-pay-modal {
+    border: 1px solid rgba(232, 176, 74, 0.25);
+    border-radius: 16px;
+    box-shadow: 0 24px 48px rgba(0, 0, 0, 0.35);
+}
+
+.rp-pay-modal .modal-title {
+    font-family: var(--rp-font, 'Plus Jakarta Sans', system-ui, sans-serif);
+    color: #1a1f27;
+}
+
+.rp-pay-modal-total,
+.rp-pay-modal-return {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    margin-bottom: 14px;
+}
+
+.rp-pay-modal-total {
+    background: linear-gradient(135deg, rgba(232, 176, 74, 0.18) 0%, rgba(232, 176, 74, 0.08) 100%);
+    border: 1px solid rgba(232, 176, 74, 0.35);
+}
+
+.rp-pay-modal-return {
+    background: #f0fdf4;
+    border: 1px solid #86efac;
+}
+
+.rp-pay-modal-label {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #475569;
+}
+
+.rp-pay-modal-amount {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: #b45309;
+    font-variant-numeric: tabular-nums;
+}
+
+.rp-pay-modal-change {
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: #15803d;
+    font-variant-numeric: tabular-nums;
+}
+
+.rp-pay-modal .input-group-text {
+    font-weight: 700;
+    background: #f8fafc;
+}
+
+.rp-pay-modal #rpCashTendered {
+    font-size: 1.25rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+
+.rp-pay-modal .btn-rp-primary {
+    min-width: 170px;
+}
