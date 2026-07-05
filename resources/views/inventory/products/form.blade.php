@@ -36,6 +36,8 @@
     $categorySelection = $categorySelection ?? ['parent_id' => null, 'sub_category_id' => null];
     $selectedParentCategoryId = old('parent_category_id', $categorySelection['parent_id'] ?? '');
     $selectedSubCategoryId = old('sub_category_id', $categorySelection['sub_category_id'] ?? '');
+    $departments = $departments ?? collect();
+    $selectedDepartmentId = old('department_id', isset($product) && $product ? ($product->department_id ?? '') : '');
 @endphp
 
 <div class="row g-3">
@@ -82,6 +84,22 @@
                     <label class="form-check-label small" for="removeProductImage">Picture hata dein</label>
                 </div>
             @endif
+        </div>
+    </div>
+
+    <div class="col-12 col-md-3">
+        <label class="form-label">Department</label>
+        <select name="department_id" class="form-select @error('department_id') is-invalid @enderror">
+            <option value="">—</option>
+            @foreach($departments as $dep)
+                <option value="{{ $dep->id }}" @selected((string) $selectedDepartmentId === (string) $dep->id)>
+                    {{ $dep->name }}
+                </option>
+            @endforeach
+        </select>
+        @error('department_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
+        <div class="form-text text-secondary small">
+            <a href="{{ route('inventory.departments.index') }}">Departments manage karein</a>
         </div>
     </div>
 

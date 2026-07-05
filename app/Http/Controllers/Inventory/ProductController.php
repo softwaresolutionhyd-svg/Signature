@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Inventory;
 use App\Http\Controllers\Controller;
 use App\Support\SafeInternalReturnPath;
 use App\Models\InventoryCategory;
+use App\Models\InventoryDepartment;
 use App\Models\InventoryCostLayer;
 use App\Models\InventoryMove;
 use App\Models\InventoryProduct;
@@ -59,11 +60,16 @@ class ProductController extends Controller
         $stockFilter  = $request->query('stock_filter', '');
         $categoryId   = (int) $request->query('category_id', 0);
         $categoryId   = $categoryId > 0 ? $categoryId : null;
+        $departmentId = (int) $request->query('department_id', 0);
+        $departmentId = $departmentId > 0 ? $departmentId : null;
         $userId       = (int) Auth::id();
         $categories   = InventoryCategory::query()
             ->with('parent:id,name')
             ->orderBy('name')
             ->get(['id', 'name', 'parent_id']);
+        $departments  = InventoryDepartment::query()
+            ->orderBy('name')
+            ->get(['id', 'name', 'active']);
 
         // Low stock / out-of-stock counts for the alert banner
         $lowStockCount    = InventoryProduct::where('active', true)
@@ -83,7 +89,7 @@ class ProductController extends Controller
             })
             ->select('inventory_products.*')
             ->selectRaw('CASE WHEN ipf.id IS NULL THEN 0 ELSE 1 END as is_starred_sort')
-            ->with(['category:id,name,parent_id', 'category.parent:id,name'])
+            ->with(['category:id,name,parent_id', 'category.parent:id,name', 'department:id,name'])
             ->withCount(['manufacturingBoms as active_manufacturing_boms_count' => fn ($q) => $q->where('active', true)])
             ->with(['uomConversions' => fn ($q) => $q->where('active', true)->select(['id', 'product_id', 'uom', 'factor_to_base'])])
             ->when($q !== '', function ($query) use ($q) {
@@ -91,10 +97,12 @@ class ProductController extends Controller
                     $sub->where('sku', 'like', "%{$q}%")
                         ->orWhere('barcode', 'like', "%{$q}%")
                         ->orWhere('name', 'like', "%{$q}%")
-                        ->orWhereHas('category', fn ($cat) => $cat->where('name', 'like', "%{$q}%"));
+                        ->orWhereHas('category', fn ($cat) => $cat->where('name', 'like', "%{$q}%"))
+                        ->orWhereHas('department', fn ($dep) => $dep->where('name', 'like', "%{$q}%"));
                 });
             })
             ->when($categoryId !== null, fn ($query) => $query->where('inventory_products.category_id', $categoryId))
+            ->when($departmentId !== null, fn ($query) => $query->where('inventory_products.department_id', $departmentId))
             ->when($stockFilter === 'low', fn ($q) => $q->where('for_purchase', true)->where('reorder_level', '>', 0)->whereRaw('qty_on_hand <= reorder_level')->excludingActiveBomFinishedProducts())
             ->when($stockFilter === 'zero', fn ($q) => $q->where('for_purchase', true)->where('qty_on_hand', '<=', 0))
             ->when($stockFilter === 'ok', fn ($q) => $q->where('for_purchase', true)->where(fn ($sub) => $sub->where('reorder_level', 0)->orWhereRaw('qty_on_hand > reorder_level')))
@@ -220,7 +228,7 @@ class ProductController extends Controller
 
         $showLowStockBanner = Setting::get('inventory_show_low_stock_banner', '1') === '1';
 
-        return view('inventory.products.index', compact('products', 'q', 'categories', 'categoryId', 'lowStockCount', 'outOfStockCount', 'canManufacturing', 'showLowStockBanner'));
+        return view('inventory.products.index', compact('products', 'q', 'categories', 'categoryId', 'departments', 'departmentId', 'lowStockCount', 'outOfStockCount', 'canManufacturing', 'showLowStockBanner'));
     }
 
     public function toggleStar(InventoryProduct $product)
@@ -248,7 +256,8 @@ class ProductController extends Controller
 
         return view('inventory.products.create', array_merge(
             compact('uomLibraryUnits', 'uomLibraryRules'),
-            $this->categoryFormDataForProduct(null)
+            $this->categoryFormDataForProduct(null),
+            $this->departmentFormDataForProduct()
         ));
     }
 
@@ -272,6 +281,7 @@ class ProductController extends Controller
             'name'          => ['required', 'string', 'max:200'],
             'parent_category_id' => ['nullable', 'integer', 'exists:tenant.inventory_categories,id'],
             'sub_category_id'    => ['nullable', 'integer', 'exists:tenant.inventory_categories,id'],
+            'department_id'      => ['nullable', 'integer', 'exists:tenant.inventory_departments,id'],
             'uom'           => $uomRules,
             'package_contents_qty' => ['nullable', 'required_with:package_contents_uom', 'numeric', 'min:0.000001'],
             'package_contents_uom' => $pkgUomRules,
@@ -291,6 +301,7 @@ class ProductController extends Controller
         $this->assertUniqueConversionUnits($data);
 
         $data['category_id'] = $this->resolveProductCategoryId($request);
+        $data['department_id'] = $request->integer('department_id') ?: null;
 
         $this->applyPackageContentsFields($request, $data);
         $this->applyProductCostingFields($request, $data);
@@ -344,7 +355,7 @@ class ProductController extends Controller
 
     public function edit(Request $request, InventoryProduct $product)
     {
-        $product->loadMissing('category.parent');
+        $product->loadMissing(['category.parent', 'department']);
 
         $conversionMap = $product->uomConversions()
             ->where('active', true)
@@ -456,7 +467,8 @@ class ProductController extends Controller
 
         return view('inventory.products.edit', array_merge(
             compact('product', 'purchaseSummary', 'history', 'productBoms', 'bomLineCosts', 'componentUsedInBoms', 'canManufacturing', 'uomLibraryUnits', 'uomLibraryRules', 'productReturnPath', 'bomStandardCost'),
-            $this->categoryFormDataForProduct($product)
+            $this->categoryFormDataForProduct($product),
+            $this->departmentFormDataForProduct()
         ));
     }
 
@@ -832,6 +844,7 @@ class ProductController extends Controller
             'name'          => ['required', 'string', 'max:200'],
             'parent_category_id' => ['nullable', 'integer', 'exists:tenant.inventory_categories,id'],
             'sub_category_id'    => ['nullable', 'integer', 'exists:tenant.inventory_categories,id'],
+            'department_id'      => ['nullable', 'integer', 'exists:tenant.inventory_departments,id'],
             'uom'           => $uomRules,
             'package_contents_qty' => ['nullable', 'required_with:package_contents_uom', 'numeric', 'min:0.000001'],
             'package_contents_uom' => $pkgUomRules,
@@ -852,6 +865,7 @@ class ProductController extends Controller
         $this->assertUniqueConversionUnits($data);
 
         $data['category_id'] = $this->resolveProductCategoryId($request);
+        $data['department_id'] = $request->integer('department_id') ?: null;
 
         $this->applyPackageContentsFields($request, $data);
         $recipeApplied = $this->applyActiveRecipeStandardCost($product, $data);
@@ -1049,6 +1063,19 @@ class ProductController extends Controller
                 'return' => $safeReturn,
             ], fn ($v) => $v !== null && $v !== ''))
             ->with('status', 'Purchase history line updated.');
+    }
+
+    /**
+     * @return array{departments: \Illuminate\Support\Collection<int, InventoryDepartment>}
+     */
+    private function departmentFormDataForProduct(): array
+    {
+        return [
+            'departments' => InventoryDepartment::query()
+                ->where('active', true)
+                ->orderBy('name')
+                ->get(['id', 'name']),
+        ];
     }
 
     /**

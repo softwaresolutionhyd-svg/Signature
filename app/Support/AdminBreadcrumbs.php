@@ -94,6 +94,9 @@ final class AdminBreadcrumbs
         } elseif (str_contains($name, '.categories.')) {
             $out[] = ['label' => 'Categories', 'url' => $name === 'inventory.categories.index' ? null : route('inventory.categories.index')];
             self::appendCrudTail($out, $name);
+        } elseif (str_contains($name, '.departments.')) {
+            $out[] = ['label' => 'Departments', 'url' => $name === 'inventory.departments.index' ? null : route('inventory.departments.index')];
+            self::appendCrudTail($out, $name);
         } elseif (str_contains($name, '.moves.')) {
             $out[] = ['label' => 'Moves', 'url' => $name === 'inventory.moves.index' ? null : route('inventory.moves.index')];
             self::appendCrudTail($out, $name);

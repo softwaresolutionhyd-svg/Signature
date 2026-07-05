@@ -26,6 +26,14 @@
         <div class="card-header bg-white d-flex flex-wrap gap-2 align-items-center justify-content-between">
             <form class="d-flex gap-2 flex-wrap" method="GET" action="{{ route('inventory.products.index') }}">
                 <input type="text" name="q" value="{{ $q }}" class="form-control" placeholder="Search SKU, barcode or name..." style="max-width: 260px;">
+                <select name="department_id" class="form-select" style="max-width:200px;">
+                    <option value="">All Departments</option>
+                    @foreach($departments as $dep)
+                        <option value="{{ $dep->id }}" {{ (string) $departmentId === (string) $dep->id ? 'selected' : '' }}>
+                            {{ $dep->name }}{{ $dep->active ? '' : ' (inactive)' }}
+                        </option>
+                    @endforeach
+                </select>
                 <select name="category_id" class="form-select" style="max-width:220px;">
                     <option value="">All Categories</option>
                     @foreach($categories as $cat)
@@ -45,7 +53,7 @@
                     <option value="ok"   {{ request('stock_filter')==='ok'   ? 'selected' : '' }}>Stock OK</option>
                 </select>
                 <button class="btn btn-outline-primary" type="submit"><i class="bi bi-search me-1"></i> Filter</button>
-                @if($q !== '' || request('stock_filter') || !empty($categoryId))
+                @if($q !== '' || request('stock_filter') || !empty($categoryId) || !empty($departmentId))
                     <a class="btn btn-outline-secondary" href="{{ route('inventory.products.index') }}">Clear</a>
                 @endif
             </form>
@@ -62,6 +70,7 @@
                         <tr>
                             <th style="min-width:120px;">SKU</th>
                             <th style="min-width:220px;">Product</th>
+                            <th>Department</th>
                             <th>Category</th>
                             <th class="text-end">Effective Cost</th>
                             <th class="text-end">Sale Price</th>
@@ -81,6 +90,7 @@
                                 <div class="fw-semibold">{{ $p->name }}</div>
                                 <div class="small text-secondary">{{ $p->uom }}</div>
                             </td>
+                            <td>{{ $p->department?->name ?? '—' }}</td>
                             <td>{{ $p->category ? $p->category->breadcrumbLabel() : '—' }}</td>
                             <td class="text-end">{{ fmt_num((float) $p->total, 2) }}</td>
                             <td class="text-end">{{ fmt_num((float) $p->price, 2) }}</td>

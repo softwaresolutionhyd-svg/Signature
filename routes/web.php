@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\Inventory\InventoryController;
 use App\Http\Controllers\Inventory\StockInController;
 use App\Http\Controllers\Inventory\CategoryController;
+use App\Http\Controllers\Inventory\DepartmentController as InventoryDepartmentController;
 use App\Http\Controllers\Inventory\ProductController;
 use App\Http\Controllers\Inventory\MoveController;
 use App\Http\Controllers\Inventory\UomLibraryController;
@@ -138,6 +139,7 @@ Route::middleware(['auth', 'employee', 'passwordChanged'])->group(function () {
             ->name('products.purchase-lines.update')
             ->middleware('role:super_admin');
         Route::resource('categories', CategoryController::class)->except(['show']);
+        Route::resource('departments', InventoryDepartmentController::class)->except(['show']);
         Route::resource('moves', MoveController::class)->only(['index', 'create', 'store']);
         Route::get('/stock-in', [StockInController::class, 'index'])->name('stock-in.index');
         Route::post('/stock-in/{order}/receive', [StockInController::class, 'receive'])->name('stock-in.receive');

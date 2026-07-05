@@ -21,6 +21,7 @@ class InventoryProduct extends Model
     protected $fillable = [
         'company_id',
         'category_id',
+        'department_id',
         'sku',
         'barcode',
         'name',
@@ -273,6 +274,11 @@ class InventoryProduct extends Model
     public function category(): BelongsTo
     {
         return $this->belongsTo(InventoryCategory::class, 'category_id');
+    }
+
+    public function department(): BelongsTo
+    {
+        return $this->belongsTo(InventoryDepartment::class, 'department_id');
     }
 
     public function moves(): HasMany
