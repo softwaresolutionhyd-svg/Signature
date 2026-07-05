@@ -61,6 +61,7 @@
             btn.setAttribute('aria-selected', active ? 'true' : 'false');
         });
         syncServiceDetailPanels();
+        syncWhatsappButton();
     }
 
     function syncServiceDetailPanels() {
@@ -68,6 +69,74 @@
         $$('.rp-service-panel').forEach((panel) => {
             panel.classList.toggle('d-none', panel.dataset.service !== type);
         });
+    }
+
+    function syncWhatsappButton() {
+        const btn = $('#rpWhatsappBtn');
+        if (!btn) return;
+        const show = selectedServiceType() === 'delivery';
+        btn.classList.toggle('d-none', !show);
+        btn.disabled = !show || cart.length === 0;
+    }
+
+    function normalizeWhatsappPhone(raw) {
+        let digits = String(raw || '').replace(/\D/g, '');
+        if (digits === '') return '';
+        if (digits.startsWith('00')) {
+            digits = digits.slice(2);
+        }
+        if (digits.startsWith('0') && digits.length === 11) {
+            digits = '92' + digits.slice(1);
+        }
+        if (digits.length === 10 && digits.startsWith('3')) {
+            digits = '92' + digits;
+        }
+        return digits;
+    }
+
+    function buildDeliveryWhatsappMessage() {
+        const customerName = ($('#rpDeliveryName')?.value || '').trim() || 'Customer';
+        const restaurantName = boot.restaurantName || 'Restaurant';
+        const totals = calcCartTotals();
+        const lines = cart.map((r, idx) => {
+            const lineTotal = lineRowTotal(r, totals, idx);
+            return `• ${fmtQty(r.qty)}× ${r.name} — Rs. ${fmtMoney(lineTotal)}`;
+        });
+
+        return [
+            `Assalam o Alaikum ${customerName}!`,
+            '',
+            `Aap ne *${restaurantName}* se ye order kiya hai:`,
+            '',
+            ...lines,
+            '',
+            `*Total Amount: Rs. ${fmtMoney(totals.grand)}*`,
+            '',
+            'Aapka order *40-45 minutes* mein deliver ho jayega.',
+            '',
+            'Shukriya!',
+        ].join('\n');
+    }
+
+    function openDeliveryWhatsapp() {
+        if (selectedServiceType() !== 'delivery') return;
+        if (!cart.length) {
+            alert('Pehle item add karein.');
+            return;
+        }
+        const phoneRaw = ($('#rpDeliveryPhone')?.value || '').trim();
+        if (!phoneRaw) {
+            alert('Delivery ke liye Phone No. enter karein.');
+            $('#rpDeliveryPhone')?.focus();
+            return;
+        }
+        const phone = normalizeWhatsappPhone(phoneRaw);
+        if (phone.length < 10) {
+            alert('Sahi WhatsApp number enter karein.');
+            return;
+        }
+        const text = encodeURIComponent(buildDeliveryWhatsappMessage());
+        window.open(`https://wa.me/${phone}?text=${text}`, '_blank', 'noopener,noreferrer');
     }
 
     function setCreditMode(on) {
@@ -480,6 +549,7 @@
         renderMenuGrid();
         renderCart();
         renderTotals();
+        syncWhatsappButton();
         if (autoPaymentAmount && payments.length === 1) {
             payments[0].amount = calcCartTotals().grand;
         }
@@ -710,6 +780,7 @@
             setServiceType(btn.dataset.type);
         });
         $('#rpHoldBtn')?.addEventListener('click', () => submitHoldOrder());
+        $('#rpWhatsappBtn')?.addEventListener('click', () => openDeliveryWhatsapp());
         $('#rpPayBtn')?.addEventListener('click', () => submitOrder('checkout'));
         $('#rpTabPending')?.addEventListener('click', () => setOrderListMode('pending'));
         $('#rpTabPaid')?.addEventListener('click', () => setOrderListMode('paid'));

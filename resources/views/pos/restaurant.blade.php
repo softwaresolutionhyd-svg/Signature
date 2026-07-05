@@ -6,7 +6,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="{{ asset('css/restaurant-pos.css') }}?v=29">
+<link rel="stylesheet" href="{{ asset('css/restaurant-pos.css') }}?v=30">
 @endpush
 
 @section('content')
@@ -241,6 +241,9 @@
                         <i class="bi bi-send"></i> Hold &amp; Kitchen
                     </button>
                 @endif
+                <button type="button" class="btn btn-sm btn-rp-whatsapp d-none" id="rpWhatsappBtn" title="Customer ko WhatsApp par order confirm karein">
+                    <i class="bi bi-whatsapp"></i> WhatsApp
+                </button>
                 <button type="button" class="btn btn-sm btn-rp-primary" id="rpPayBtn">
                     <i class="bi bi-credit-card"></i> Pay Now
                 </button>
@@ -285,6 +288,7 @@
         'paidBillsDetail' => $paidBillsDetail ?? [],
         'serviceTypeLabels' => \App\Models\PosOrder::serviceTypeLabels(),
         'tablesEnabled' => (bool) ($posSettings['enable_tables'] ?? false),
+        'restaurantName' => config('app.name'),
         'routes' => [
             'checkout' => route('restaurant-pos.checkout'),
             'hold' => route('restaurant-pos.hold'),
@@ -297,5 +301,5 @@
 <script>
 window.RESTAURANT_POS_BOOTSTRAP = @json($restaurantBootstrap);
 </script>
-<script src="{{ asset('js/restaurant-pos-app.js') }}?v=22"></script>
+<script src="{{ asset('js/restaurant-pos-app.js') }}?v=23"></script>
 @endsection

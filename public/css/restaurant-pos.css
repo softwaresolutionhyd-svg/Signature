@@ -1268,6 +1268,25 @@ body.admin-app-body:has(.restaurant-pos-app) .admin-main {
     transform: translateY(-1px);
 }
 
+.restaurant-pos-app .btn-rp-whatsapp {
+    background: #25d366;
+    border: 1px solid #20bd5a;
+    color: #fff;
+    font-weight: 700;
+}
+
+.restaurant-pos-app .btn-rp-whatsapp:hover:not(:disabled) {
+    background: #20bd5a;
+    border-color: #1da851;
+    color: #fff;
+    box-shadow: 0 4px 16px rgba(37, 211, 102, 0.38);
+}
+
+.restaurant-pos-app .btn-rp-whatsapp:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
 .restaurant-pos-app .rp-empty {
     text-align: center;
     color: var(--rp-text-soft);
