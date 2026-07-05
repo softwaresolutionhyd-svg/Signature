@@ -18,14 +18,21 @@ class InventoryDepartment extends Model
         'company_id',
         'name',
         'active',
+        'is_warehouse',
     ];
 
     protected $casts = [
         'active' => 'bool',
+        'is_warehouse' => 'bool',
     ];
 
     public function products(): HasMany
     {
         return $this->hasMany(InventoryProduct::class, 'department_id');
+    }
+
+    public function stocks(): HasMany
+    {
+        return $this->hasMany(InventoryProductStock::class, 'department_id');
     }
 }

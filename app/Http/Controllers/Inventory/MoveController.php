@@ -12,17 +12,22 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Http\Requests\InventoryMoveStoreRequest;
 use App\Notifications\StockUpdated;
+use App\Services\InventoryStockService;
 
 class MoveController extends Controller
 {
     private const FIFO_EPSILON = 0.000001;
+
+    public function __construct(
+        private readonly InventoryStockService $inventoryStock
+    ) {}
     public function index(Request $request)
     {
         $type = $request->query('type');
 
         $moves = InventoryMove::query()
             ->with(['product:id,sku,name,uom', 'user:id,name'])
-            ->when(in_array($type, ['in', 'out', 'adjust', 'wastage'], true), fn ($q) => $q->where('type', $type))
+            ->when(in_array($type, ['in', 'out', 'adjust', 'wastage', 'transfer'], true), fn ($q) => $q->where('type', $type))
             ->latest()
             ->paginate(Setting::pageSize('inventory_moves_per_page', 25))
             ->withQueryString();
@@ -77,6 +82,10 @@ class MoveController extends Controller
             };
 
             $product->update(['qty_on_hand' => $after]);
+
+            if ($data['type'] === 'in') {
+                $this->inventoryStock->addToWarehouse($product, $qtyBase);
+            }
 
             $unitCost = null;
             $totalCost = null;

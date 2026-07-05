@@ -15,7 +15,8 @@ final class PurchaseOrderReceiveService
     private const FIFO_EPSILON = 0.000001;
 
     public function __construct(
-        private readonly AutoJournalService $autoJournal
+        private readonly AutoJournalService $autoJournal,
+        private readonly InventoryStockService $inventoryStock,
     ) {}
 
     public function receive(PurchaseOrder $order): void
@@ -40,6 +41,8 @@ final class PurchaseOrderReceiveService
                 $after = $before + $qtyBase;
 
                 $product->update(['qty_on_hand' => $after]);
+
+                $this->inventoryStock->addToWarehouse($product, $qtyBase);
 
                 $unitCostBase = $factor > 0 ? ((float) $line->unit_price / $factor) : (float) $line->unit_price;
                 InventoryCostLayer::create([

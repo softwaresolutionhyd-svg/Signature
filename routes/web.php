@@ -9,6 +9,7 @@ use App\Http\Controllers\Inventory\StockInController;
 use App\Http\Controllers\Inventory\CategoryController;
 use App\Http\Controllers\Inventory\DepartmentController as InventoryDepartmentController;
 use App\Http\Controllers\Inventory\ProductController;
+use App\Http\Controllers\Inventory\StockIssueController;
 use App\Http\Controllers\Inventory\MoveController;
 use App\Http\Controllers\Inventory\UomLibraryController;
 use App\Http\Controllers\Inventory\StockCheckController;
@@ -140,6 +141,9 @@ Route::middleware(['auth', 'employee', 'passwordChanged'])->group(function () {
             ->middleware('role:super_admin');
         Route::resource('categories', CategoryController::class)->except(['show']);
         Route::resource('departments', InventoryDepartmentController::class)->except(['show']);
+        Route::get('issues', [StockIssueController::class, 'index'])->name('issues.index');
+        Route::get('issues/create', [StockIssueController::class, 'create'])->name('issues.create');
+        Route::post('issues', [StockIssueController::class, 'store'])->name('issues.store');
         Route::resource('moves', MoveController::class)->only(['index', 'create', 'store']);
         Route::get('/stock-in', [StockInController::class, 'index'])->name('stock-in.index');
         Route::post('/stock-in/{order}/receive', [StockInController::class, 'receive'])->name('stock-in.receive');

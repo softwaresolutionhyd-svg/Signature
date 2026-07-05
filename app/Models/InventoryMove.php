@@ -17,6 +17,8 @@ class InventoryMove extends Model
     protected $fillable = [
         'company_id',
         'product_id',
+        'from_department_id',
+        'to_department_id',
         'user_id',
         'type',
         'qty',
@@ -44,6 +46,16 @@ class InventoryMove extends Model
     public function product(): BelongsTo
     {
         return $this->belongsTo(InventoryProduct::class, 'product_id');
+    }
+
+    public function fromDepartment(): BelongsTo
+    {
+        return $this->belongsTo(InventoryDepartment::class, 'from_department_id');
+    }
+
+    public function toDepartment(): BelongsTo
+    {
+        return $this->belongsTo(InventoryDepartment::class, 'to_department_id');
     }
 
     public function user(): BelongsTo

@@ -281,6 +281,11 @@ class InventoryProduct extends Model
         return $this->belongsTo(InventoryDepartment::class, 'department_id');
     }
 
+    public function stocks(): HasMany
+    {
+        return $this->hasMany(InventoryProductStock::class, 'product_id');
+    }
+
     public function moves(): HasMany
     {
         return $this->hasMany(InventoryMove::class, 'product_id');

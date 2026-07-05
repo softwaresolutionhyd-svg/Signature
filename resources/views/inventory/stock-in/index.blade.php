@@ -13,8 +13,8 @@
         <h4 class="fw-bold mb-1">Stock in</h4>
         <p class="text-secondary small mb-0">
             Yahan <strong>confirmed</strong> purchase orders (RFQ → Confirm PO ke baad) dikhte hain.
-            <strong>Receive</strong> se stock barhta hai — yeh sirf <strong>Inventory</strong> module access (create) wale kar sakte hain.
-            Purchase module par ab receive button nahi hai.
+            <strong>Receive</strong> se stock barhta hai aur pehle <strong>Warehouse</strong> department mein jata hai.
+            Phir <a href="{{ route('inventory.issues.create') }}">Issue Stock</a> se departments ko bhejein.
         </p>
     </div>
 
