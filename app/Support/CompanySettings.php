@@ -19,9 +19,4 @@ class CompanySettings
 
         return $value !== null ? $value : $default;
     }
-
-    public static function otpLoginEnabled(?int $companyId): bool
-    {
-        return (string) self::get($companyId, 'otp_login_enabled', '1') === '1';
-    }
 }

@@ -628,47 +628,6 @@
             </div>
         </div>
 
-        <div class="card shadow-sm mt-4 border-warning border-opacity-25">
-            <div class="card-header bg-white fw-semibold">
-                <i class="bi bi-shield-lock me-1"></i> Login OTP (Twilio SMS)
-            </div>
-            <div class="card-body">
-                <div class="form-check form-switch mb-3">
-                    <input type="hidden" name="otp_login_enabled" value="0">
-                    <input class="form-check-input" type="checkbox" name="otp_login_enabled" value="1" id="otp_login_enabled"
-                           @checked(old('otp_login_enabled', ($settings['otp_login_enabled'] ?? '1')) === '1')>
-                    <label class="form-check-label fw-semibold" for="otp_login_enabled">Login par OTP zaroori ho (recommended)</label>
-                </div>
-                <p class="small text-secondary mb-3">Jab ON ho, employee login par password ke baad Twilio se mobile par 6-digit SMS OTP jayega.</p>
-
-                <div class="alert alert-info small">
-                    Twilio credentials <a href="https://console.twilio.com/" target="_blank" rel="noopener">console.twilio.com</a> se lein.
-                    <strong>From number</strong> woh Twilio SMS number hona chahiye jo aapke account mein verified ho (E.164 format, e.g. <code>+15017122661</code>).
-                </div>
-
-                <div class="row g-3">
-                    <div class="col-md-4">
-                        <label class="form-label">Twilio Account SID</label>
-                        <input type="text" name="otp_twilio_account_sid" class="form-control"
-                               value="{{ old('otp_twilio_account_sid', $settings['otp_twilio_account_sid'] ?? '') }}"
-                               placeholder="ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" autocomplete="off">
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label">Twilio Auth Token</label>
-                        <input type="password" name="otp_twilio_auth_token" class="form-control"
-                               value="{{ old('otp_twilio_auth_token', $settings['otp_twilio_auth_token'] ?? '') }}"
-                               placeholder="Auth token" autocomplete="off">
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label">Twilio From Number</label>
-                        <input type="text" name="otp_twilio_from_number" class="form-control"
-                               value="{{ old('otp_twilio_from_number', $settings['otp_twilio_from_number'] ?? '') }}"
-                               placeholder="+15017122661">
-                    </div>
-                </div>
-            </div>
-        </div>
-
         <div class="card shadow-sm mt-4">
             <div class="card-header bg-white fw-semibold">Database Information</div>
             <div class="card-body">

@@ -23,12 +23,11 @@
     </div>
 
     <div class="col-12 col-md-6">
-        <label class="form-label">Mobile / WhatsApp <span class="text-danger">*</span></label>
+        <label class="form-label">Mobile / WhatsApp</label>
         <input type="text" name="phone" value="{{ old('phone', $employee->phone ?? '') }}"
                class="form-control @error('phone') is-invalid @enderror" maxlength="60"
-               placeholder="03xx xxxxxxx (OTP login ke liye)">
+               placeholder="03xx xxxxxxx">
         @error('phone')<div class="invalid-feedback">{{ $message }}</div>@enderror
-        <div class="form-text">Login account ho to is number par Twilio SMS OTP jayega.</div>
     </div>
 
     <div class="col-12 col-md-4">

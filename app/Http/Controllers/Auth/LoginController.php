@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
-use App\Services\LoginOtpService;
 use App\Services\LoginRateLimitService;
 use App\Services\LoginTotpService;
 use Illuminate\Foundation\Auth\AuthenticatesUsers;
@@ -26,7 +25,6 @@ class LoginController extends Controller
     protected $decayMinutes = 10;
 
     public function __construct(
-        private readonly LoginOtpService $loginOtp,
         private readonly LoginTotpService $loginTotp,
         private readonly LoginRateLimitService $rateLimit
     ) {
@@ -65,35 +63,6 @@ class LoginController extends Controller
             $this->clearLoginAttempts($request);
 
             return redirect()->route('login.verify-totp');
-        }
-
-        if ($this->loginOtp->requiresOtp($user)) {
-            $phone = $this->loginOtp->resolvePhoneForUser($user);
-            if ($phone === null) {
-                return back()->withErrors([
-                    'login' => 'Employee record par mobile number nahi hai. Admin se phone number add karwaein.',
-                ])->withInput($request->only('login', 'remember'));
-            }
-
-            try {
-                $challenge = $this->loginOtp->startChallenge(
-                    $user,
-                    $request->boolean('remember'),
-                    $phone
-                );
-            } catch (\Throwable $e) {
-                report($e);
-
-                return back()->withErrors([
-                    'login' => 'OTP bhejne mein masla aaya. Settings → Login OTP mein Twilio credentials check karein.',
-                ])->withInput($request->only('login', 'remember'));
-            }
-
-            $request->session()->put('login_otp_token', $challenge['token']);
-            $request->session()->put('otp_phone_masked', $challenge['masked_phone']);
-            $this->clearLoginAttempts($request);
-
-            return redirect()->route('login.verify-otp');
         }
 
         Auth::login($user, $request->boolean('remember'));

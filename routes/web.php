@@ -48,7 +48,6 @@ use App\Http\Controllers\ManualSystemUpdateController;
 use App\Http\Controllers\DatabaseBackupController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Auth\PasswordResetRequestController as GuestPasswordResetRequestController;
-use App\Http\Controllers\Auth\OtpVerificationController;
 use App\Http\Controllers\Auth\TotpVerificationController;
 use App\Http\Controllers\TwoFactorController;
 use App\Http\Controllers\Admin\PasswordResetRequestController as AdminPasswordResetRequestController;
@@ -74,9 +73,6 @@ Route::get('/', function () {
 Auth::routes(['register' => false, 'reset' => false]);
 
 Route::middleware('guest')->group(function () {
-    Route::get('/login/verify-otp', [OtpVerificationController::class, 'show'])->name('login.verify-otp');
-    Route::post('/login/verify-otp', [OtpVerificationController::class, 'verify'])->name('login.verify-otp.submit');
-    Route::post('/login/resend-otp', [OtpVerificationController::class, 'resend'])->name('login.resend-otp');
     Route::get('/login/verify-totp', [TotpVerificationController::class, 'show'])->name('login.verify-totp');
     Route::post('/login/verify-totp', [TotpVerificationController::class, 'verify'])->name('login.verify-totp.submit');
     Route::get('/request-password-reset', [GuestPasswordResetRequestController::class, 'create'])->name('password-reset-request.create');
