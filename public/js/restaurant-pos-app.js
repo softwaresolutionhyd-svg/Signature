@@ -2,6 +2,7 @@
     const boot = window.RESTAURANT_POS_BOOTSTRAP || {};
     const products = boot.products || [];
     const menuCategories = boot.menuCategories || [];
+    const contacts = boot.contacts || [];
     const settings = boot.settings || {};
     const routes = boot.routes || {};
     const csrf = boot.csrf || '';
@@ -14,10 +15,13 @@
     const posDefaultLineTax = Number(settings.default_tax_rate || 0);
     const posShowDiscount = settings.show_discount !== false;
     const posTablesEnabled = boot.tablesEnabled !== undefined ? !!boot.tablesEnabled : !!settings.enable_tables;
+    const posShowCustomerSection = settings.show_customer_section !== false;
 
     let cart = [];
     let payments = [{ method: 'cash', amount: 0 }];
     let orderType = 'sale';
+    let isCreditMode = false;
+    let selectedContactId = null;
     let resumeOrderId = boot.resumeOrderId || null;
     let selectedMenuCategoryId = null;
 
@@ -64,6 +68,42 @@
         $$('.rp-service-panel').forEach((panel) => {
             panel.classList.toggle('d-none', panel.dataset.service !== type);
         });
+    }
+
+    function setCreditMode(on) {
+        isCreditMode = !!on;
+        const toggle = $('#rpCreditToggle');
+        if (toggle) toggle.checked = isCreditMode;
+        $('#rpPaymentsBlock')?.classList.toggle('d-none', isCreditMode);
+        $('#rpPayBtn')?.classList.toggle('btn-rp-primary', !isCreditMode);
+        $('#rpPayBtn')?.classList.toggle('btn-danger', isCreditMode);
+        if ($('#rpPayBtn')) {
+            $('#rpPayBtn').textContent = isCreditMode ? 'Record Credit' : 'Pay Now';
+        }
+    }
+
+    function filterContacts(q) {
+        const needle = q.toLowerCase();
+        return contacts.filter((c) =>
+            String(c.name || '').toLowerCase().includes(needle) || String(c.phone || '').toLowerCase().includes(needle)
+        ).slice(0, 12);
+    }
+
+    function selectContact(id, name, phone) {
+        selectedContactId = String(id);
+        const label = $('#rpSelectedContact');
+        if (label) label.textContent = name + (phone ? ' · ' + phone : '');
+        $('#rpSelectedContactWrap')?.classList.remove('d-none');
+        $('#rpContactDropdown')?.classList.add('d-none');
+        if ($('#rpContactSearch')) $('#rpContactSearch').value = '';
+    }
+
+    function restoreResumeContact() {
+        if (!settings.resume_contact_id) return;
+        const c = contacts.find((x) => Number(x.id) === Number(settings.resume_contact_id));
+        if (c) {
+            selectContact(c.id, c.name, c.phone || '');
+        }
     }
 
     function orderMetaLabel(order) {
@@ -493,7 +533,12 @@
             }
         }
 
-        if (mode === 'checkout' && orderType === 'sale') {
+        if (isCreditMode && mode === 'checkout' && !selectedContactId) {
+            alert('Credit sale ke liye contact select karein.');
+            return false;
+        }
+
+        if (mode === 'checkout' && !isCreditMode && orderType === 'sale') {
             const grand = calcCartTotals().grand;
             const paySum = payments.reduce((s, p) => s + Number(p.amount || 0), 0);
             if (Math.abs(paySum - grand) > 0.02) {
@@ -511,8 +556,8 @@
         form.querySelector('[name="staff_include_gas"]').value = '0';
         form.querySelector('[name="customer_type"]').value = 'mess_use';
         form.querySelector('[name="service_type"]').value = serviceType;
-        form.querySelector('[name="is_credit"]').value = '0';
-        form.querySelector('[name="contact_id"]').value = '';
+        form.querySelector('[name="is_credit"]').value = (isCreditMode && mode === 'checkout') ? '1' : '0';
+        form.querySelector('[name="contact_id"]').value = (isCreditMode && mode === 'checkout') ? (selectedContactId || '') : '';
 
         if (serviceType === 'dine_in') {
             form.querySelector('[name="table_id"]').value = posTablesEnabled ? ($('#rpTable')?.value || '') : '';
@@ -533,7 +578,9 @@
 
         form.querySelector('[name="items"]').value = JSON.stringify(cartItemsForSubmit());
         form.querySelector('[name="payments"]').value = JSON.stringify(
-            mode === 'hold' ? [{ method: 'cash', amount: 0 }] : payments
+            mode === 'hold'
+                ? [{ method: 'cash', amount: 0 }]
+                : (isCreditMode ? [] : payments)
         );
         form.querySelector('[name="bill_tax_percent"]').value = '0';
         form.querySelector('[name="bill_discount_percent"]').value = posShowDiscount ? String(getBillDiscountPercent()) : '0';
@@ -575,6 +622,10 @@
         if ($('#rpDeliveryName')) $('#rpDeliveryName').value = '';
         if ($('#rpDeliveryPhone')) $('#rpDeliveryPhone').value = '';
         if ($('#rpDeliveryAddress')) $('#rpDeliveryAddress').value = '';
+        selectedContactId = null;
+        $('#rpSelectedContactWrap')?.classList.add('d-none');
+        if ($('#rpContactSearch')) $('#rpContactSearch').value = '';
+        setCreditMode(false);
 
         document.querySelector('.rp-badge-order')?.remove();
 
@@ -667,6 +718,32 @@
         $('#rpToggleCartView')?.addEventListener('click', () => togglePanelView('cart'));
         $('#rpBillDiscount')?.addEventListener('input', renderTotals);
 
+        $('#rpCreditToggle')?.addEventListener('change', (e) => setCreditMode(e.target.checked));
+
+        const contactSearch = $('#rpContactSearch');
+        const contactDrop = $('#rpContactDropdown');
+        contactSearch?.addEventListener('input', () => {
+            const q = contactSearch.value.trim();
+            if (q.length < 1) {
+                contactDrop?.classList.add('d-none');
+                return;
+            }
+            const rows = filterContacts(q);
+            contactDrop.innerHTML = rows.map((c) =>
+                `<button type="button" class="dropdown-item" data-id="${c.id}" data-name="${escHtml(c.name)}" data-phone="${escHtml(c.phone || '')}">${escHtml(c.name)} <span class="text-secondary">${escHtml(c.phone || '')}</span></button>`
+            ).join('') || '<div class="dropdown-item-text text-secondary small">No contact</div>';
+            contactDrop.classList.remove('d-none');
+        });
+        contactDrop?.addEventListener('click', (e) => {
+            const btn = e.target.closest('[data-id]');
+            if (!btn) return;
+            selectContact(btn.dataset.id, btn.dataset.name, btn.dataset.phone || '');
+        });
+        $('#rpClearContact')?.addEventListener('click', () => {
+            selectedContactId = null;
+            $('#rpSelectedContactWrap')?.classList.add('d-none');
+        });
+
         $('#rpPayMethod')?.addEventListener('change', () => {
             payments = [{ method: $('#rpPayMethod')?.value || 'cash', amount: calcCartTotals().grand }];
         });
@@ -714,6 +791,10 @@
         } else {
             syncServiceDetailPanels();
         }
+        if (posShowCustomerSection && settings.resume_is_credit) {
+            setCreditMode(true);
+        }
+        restoreResumeContact();
         loadResumeItems();
         bindEvents();
         updateOrderTabCounts();

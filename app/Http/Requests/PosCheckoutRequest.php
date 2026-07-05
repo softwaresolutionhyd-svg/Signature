@@ -77,7 +77,12 @@ class PosCheckoutRequest extends FormRequest
                 'sale_mode' => ['nullable', 'in:customer,staff'],
                 'staff_include_gas' => ['nullable', 'boolean'],
                 'is_credit' => ['nullable', 'boolean'],
-                'contact_id' => ['nullable', 'integer', 'exists:tenant.contacts,id'],
+                'contact_id' => [
+                    Rule::requiredIf(fn () => $this->boolean('is_credit') && $this->routeIs('restaurant-pos.checkout')),
+                    'nullable',
+                    'integer',
+                    'exists:tenant.contacts,id',
+                ],
                 'guest_name' => [
                     Rule::requiredIf(fn () => $this->input('service_type') === 'delivery'
                         || ($this->input('service_type') === 'dine_in' && ! $tablesEnabled)),

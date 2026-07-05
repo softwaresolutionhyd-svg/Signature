@@ -6,7 +6,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="{{ asset('css/restaurant-pos.css') }}?v=27">
+<link rel="stylesheet" href="{{ asset('css/restaurant-pos.css') }}?v=28">
 @endpush
 
 @section('content')
@@ -165,6 +165,24 @@
                     </div>
                 </div>
             </div>
+            @if($posSettings['show_customer_section'] ?? true)
+                <div class="rp-credit-row mt-2" id="rpCreditBlock">
+                    <div class="d-flex flex-wrap align-items-center gap-2">
+                        <div class="form-check form-switch mb-0">
+                            <input class="form-check-input" type="checkbox" id="rpCreditToggle"
+                                   @checked(old('is_credit', $posSettings['resume_is_credit'] ?? false))>
+                            <label class="form-check-label small text-danger fw-semibold" for="rpCreditToggle">Credit sale</label>
+                        </div>
+                        <input type="text" id="rpContactSearch" class="form-control form-control-sm rp-contact-search"
+                               placeholder="Search contact…" autocomplete="off">
+                        <div id="rpSelectedContactWrap" class="d-none small px-2 py-1 rounded border bg-light d-inline-flex align-items-center gap-2">
+                            <span id="rpSelectedContact"></span>
+                            <button type="button" class="btn btn-sm btn-link text-danger p-0" id="rpClearContact" aria-label="Clear contact">×</button>
+                        </div>
+                    </div>
+                    <div id="rpContactDropdown" class="dropdown-menu show d-none border shadow-sm mt-1"></div>
+                </div>
+            @endif
         </div>
 
         <div class="rp-order-line-wrap d-none" id="rpOrderLinePanel">
@@ -288,5 +306,5 @@
 <script>
 window.RESTAURANT_POS_BOOTSTRAP = @json($restaurantBootstrap);
 </script>
-<script src="{{ asset('js/restaurant-pos-app.js') }}?v=21"></script>
+<script src="{{ asset('js/restaurant-pos-app.js') }}?v=22"></script>
 @endsection

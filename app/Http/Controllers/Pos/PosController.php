@@ -177,6 +177,8 @@ class PosController extends Controller
             'resume_serve_date' => $resumedOrder?->serve_date?->format('Y-m-d') ?? null,
             'resume_customer_type' => $resumedOrder?->customerTypeKey() ?? null,
             'resume_service_type' => $resumedOrder?->serviceTypeKey() ?? 'dine_in',
+            'resume_is_credit' => (bool) ($resumedOrder?->is_credit ?? false),
+            'resume_contact_id' => $resumedOrder?->contact_id ? (int) $resumedOrder->contact_id : null,
             'resume_sale_mode' => $resumedOrder
                 ? ($resumedOrder->sale_mode === 'staff' ? 'staff' : 'customer')
                 : null,
@@ -609,8 +611,11 @@ class PosController extends Controller
             $restaurantMeta = $this->restaurantPosOrderMeta($request);
             $customerType = $restaurantMeta['customer_type'];
             $serviceType = $restaurantMeta['service_type'];
-            $isCredit = false;
-            $contactId = null;
+            $isCredit = $restaurantMeta['is_credit'];
+            $contactId = $restaurantMeta['contact_id'];
+            if ($isCredit && ! $contactId) {
+                return back()->with('error', 'Credit sale ke liye contact select karein.');
+            }
             $saleMode = $restaurantMeta['sale_mode'];
             $guestName = $restaurantMeta['guest_name'];
             $roomNo = $restaurantMeta['room_no'];
@@ -2413,8 +2418,8 @@ class PosController extends Controller
             'order_notes' => $orderNotes,
             'serve_time' => null,
             'serve_date' => null,
-            'is_credit' => false,
-            'contact_id' => null,
+            'is_credit' => $request->boolean('is_credit'),
+            'contact_id' => $request->boolean('is_credit') ? ($request->integer('contact_id') ?: null) : null,
             'sale_mode' => 'customer',
             'table_id' => $tableId,
         ];
