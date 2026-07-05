@@ -176,6 +176,7 @@ class PosController extends Controller
             'resume_serve_time' => $resumedOrder?->serve_time ?? null,
             'resume_serve_date' => $resumedOrder?->serve_date?->format('Y-m-d') ?? null,
             'resume_customer_type' => $resumedOrder?->customerTypeKey() ?? null,
+            'resume_service_type' => $resumedOrder?->serviceTypeKey() ?? 'dine_in',
             'resume_sale_mode' => $resumedOrder
                 ? ($resumedOrder->sale_mode === 'staff' ? 'staff' : 'customer')
                 : null,
@@ -601,25 +602,45 @@ class PosController extends Controller
 
         $session = $this->ensureOpenSessionForUser(Auth::user());
 
-        // Detect credit sale
-        $customerType = $this->normalizeCustomerType($request->input('customer_type'));
-        $isCredit = $request->boolean('is_credit');
-        $contactId = $isCredit ? $request->integer('contact_id') : null;
+        $serviceType = null;
+        $restaurantTableId = null;
 
-        if ($customerType === 'ast_offr') {
-            $isCredit = true;
-            $contactId = $request->integer('contact_id') ?: null;
-            if (! $contactId) {
-                return back()->with('error', PosOrder::MESS_BILL_LABEL.' ke liye officer select karein.');
+        if ($this->isRestaurantPosRequest($request)) {
+            $restaurantMeta = $this->restaurantPosOrderMeta($request);
+            $customerType = $restaurantMeta['customer_type'];
+            $serviceType = $restaurantMeta['service_type'];
+            $isCredit = false;
+            $contactId = null;
+            $saleMode = $restaurantMeta['sale_mode'];
+            $guestName = $restaurantMeta['guest_name'];
+            $roomNo = $restaurantMeta['room_no'];
+            $waiterName = $restaurantMeta['waiter_name'];
+            $serveTime = $restaurantMeta['serve_time'];
+            $serveDate = $restaurantMeta['serve_date'];
+            $orderNotes = $restaurantMeta['order_notes'];
+            $restaurantTableId = $restaurantMeta['table_id'];
+        } else {
+            // Detect credit sale
+            $customerType = $this->normalizeCustomerType($request->input('customer_type'));
+            $isCredit = $request->boolean('is_credit');
+            $contactId = $isCredit ? $request->integer('contact_id') : null;
+
+            if ($customerType === 'ast_offr') {
+                $isCredit = true;
+                $contactId = $request->integer('contact_id') ?: null;
+                if (! $contactId) {
+                    return back()->with('error', PosOrder::MESS_BILL_LABEL.' ke liye officer select karein.');
+                }
+            } elseif ($isCredit && ! $contactId) {
+                return back()->with('error', 'Please select a contact for credit sale.');
             }
-        } elseif ($isCredit && ! $contactId) {
-            return back()->with('error', 'Please select a contact for credit sale.');
+
+            $saleMode = $request->input('sale_mode') === 'staff' ? 'staff' : 'customer';
+            if ($customerType === 'ast_offr') {
+                $saleMode = 'staff';
+            }
         }
 
-        $saleMode = $request->input('sale_mode') === 'staff' ? 'staff' : 'customer';
-        if ($customerType === 'ast_offr') {
-            $saleMode = 'staff';
-        }
         $resumeOrderId = $request->integer('resume_order_id') ?: null;
         $itemsNormalized = $this->normalizePosCheckoutItems(
             $request->items,
@@ -644,47 +665,53 @@ class PosController extends Controller
             }
         }
 
-        $guestName = $this->nullableText($request->input('guest_name'));
-        $roomNo = $this->nullableText($request->input('room_no'));
-        $waiterName = $this->nullableText($request->input('waiter_name'));
-        $serveTime = $this->nullableText($request->input('serve_time'));
-        $serveDate = $this->resolveServeDate($request->input('serve_date'), $customerType);
-        $orderNotes = $this->nullableText($request->input('order_notes'));
+        if (! $this->isRestaurantPosRequest($request)) {
+            $guestName = $this->nullableText($request->input('guest_name'));
+            $roomNo = $this->nullableText($request->input('room_no'));
+            $waiterName = $this->nullableText($request->input('waiter_name'));
+            $serveTime = $this->nullableText($request->input('serve_time'));
+            $serveDate = $this->resolveServeDate($request->input('serve_date'), $customerType);
+            $orderNotes = $this->nullableText($request->input('order_notes'));
 
-        if ($customerType === 'booking') {
-            $bookingGuestName = $roomNo ? $this->resolveCheckedInGuestNameByRoomNo($roomNo) : null;
-            if (! $bookingGuestName) {
-                return back()->with('error', 'Selected room is not checked-in right now.');
+            if ($customerType === 'booking') {
+                $bookingGuestName = $roomNo ? $this->resolveCheckedInGuestNameByRoomNo($roomNo) : null;
+                if (! $bookingGuestName) {
+                    return back()->with('error', 'Selected room is not checked-in right now.');
+                }
+                $guestName = $bookingGuestName;
+                $waiterName = null;
+                $serveTime = null;
+                $serveDate = null;
+            } else {
+                $roomNo = null;
             }
-            $guestName = $bookingGuestName;
-            $waiterName = null;
-            $serveTime = null;
-            $serveDate = null;
-        } else {
-            $roomNo = null;
+
+            if ($customerType === 'ast_offr' && $contactId) {
+                $guestName = Contact::query()->find($contactId)?->name ?? $guestName;
+            }
+
+            $pendingDraft = $this->findGuestPendingDraftOrder(
+                (int) $session->id,
+                $customerType,
+                $guestName,
+                $roomNo,
+                $resumeOrderId
+            );
+            if ($pendingDraft) {
+                return back()->with('error', sprintf(
+                    'Is guest ki pending bill pehle se maujood hai (%s). Pehle Resume kar ke pay karein ya Discard karein.',
+                    $pendingDraft->order_no
+                ));
+            }
         }
 
-        if ($customerType === 'ast_offr' && $contactId) {
-            $guestName = Contact::query()->find($contactId)?->name ?? $guestName;
-        }
-
-        $pendingDraft = $this->findGuestPendingDraftOrder(
-            (int) $session->id,
-            $customerType,
-            $guestName,
-            $roomNo,
-            $resumeOrderId
-        );
-        if ($pendingDraft) {
-            return back()->with('error', sprintf(
-                'Is guest ki pending bill pehle se maujood hai (%s). Pehle Resume kar ke pay karein ya Discard karein.',
-                $pendingDraft->order_no
-            ));
-        }
-
-        $order = DB::connection('tenant')->transaction(function () use ($request, $session, $isCredit, $contactId, $itemsNormalized, $guestName, $roomNo, $waiterName, $serveTime, $serveDate, $orderNotes, $resumeOrderId, $customerType, $saleMode) {
+        $order = DB::connection('tenant')->transaction(function () use ($request, $session, $isCredit, $contactId, $itemsNormalized, $guestName, $roomNo, $waiterName, $serveTime, $serveDate, $orderNotes, $resumeOrderId, $customerType, $saleMode, $serviceType, $restaurantTableId) {
             $enableTables = (string) Setting::get('pos_enable_tables', '1') !== '0';
-            $tableId = ($enableTables && $customerType !== 'booking') ? $request->integer('table_id') : null;
+            if ($this->isRestaurantPosRequest($request)) {
+                $tableId = $restaurantTableId;
+            } else {
+                $tableId = ($enableTables && $customerType !== 'booking') ? $request->integer('table_id') : null;
+            }
             $pricing = $this->posPricingOptions();
             $billTax = $pricing['tax_mode'] === 'bill'
                 ? round((float) $request->input('bill_tax_percent', $pricing['default_tax_rate']), 3)
@@ -718,6 +745,7 @@ class PosController extends Controller
                 'user_id'            => Auth::id(),
                 'contact_id'         => $contactId,
                 'customer_type'      => $customerType,
+                'service_type'       => $serviceType,
                 'sale_mode'          => $saleMode,
                 'guest_name'         => $guestName,
                 'room_no'            => $roomNo,
@@ -837,10 +865,28 @@ class PosController extends Controller
 
         $session = $this->ensureOpenSessionForUser(Auth::user());
 
-        $saleMode = $request->input('sale_mode') === 'staff' ? 'staff' : 'customer';
-        if ($customerType === 'ast_offr') {
-            $saleMode = 'staff';
+        $serviceType = null;
+        $restaurantTableId = null;
+
+        if ($this->isRestaurantPosRequest($request)) {
+            $restaurantMeta = $this->restaurantPosOrderMeta($request);
+            $customerType = $restaurantMeta['customer_type'];
+            $serviceType = $restaurantMeta['service_type'];
+            $saleMode = $restaurantMeta['sale_mode'];
+            $guestName = $restaurantMeta['guest_name'];
+            $roomNo = $restaurantMeta['room_no'];
+            $waiterName = $restaurantMeta['waiter_name'];
+            $serveTime = $restaurantMeta['serve_time'];
+            $serveDate = $restaurantMeta['serve_date'];
+            $orderNotes = $restaurantMeta['order_notes'];
+            $restaurantTableId = $restaurantMeta['table_id'];
+        } else {
+            $saleMode = $request->input('sale_mode') === 'staff' ? 'staff' : 'customer';
+            if ($customerType === 'ast_offr') {
+                $saleMode = 'staff';
+            }
         }
+
         $resumeOrderId = $request->integer('resume_order_id') ?: null;
         $itemsNormalized = $this->normalizePosCheckoutItems(
             $request->items,
@@ -866,55 +912,61 @@ class PosController extends Controller
             }
         }
 
-        $guestName = $this->nullableText($request->input('guest_name'));
-        $roomNo = $this->nullableText($request->input('room_no'));
-        $waiterName = $this->nullableText($request->input('waiter_name'));
-        $serveTime = $this->nullableText($request->input('serve_time'));
-        $serveDate = $this->resolveServeDate($request->input('serve_date'), $customerType);
-        $orderNotes = $this->nullableText($request->input('order_notes'));
+        if (! $this->isRestaurantPosRequest($request)) {
+            $guestName = $this->nullableText($request->input('guest_name'));
+            $roomNo = $this->nullableText($request->input('room_no'));
+            $waiterName = $this->nullableText($request->input('waiter_name'));
+            $serveTime = $this->nullableText($request->input('serve_time'));
+            $serveDate = $this->resolveServeDate($request->input('serve_date'), $customerType);
+            $orderNotes = $this->nullableText($request->input('order_notes'));
 
-        if ($customerType === 'booking') {
-            $bookingGuestName = $roomNo ? $this->resolveCheckedInGuestNameByRoomNo($roomNo) : null;
-            if (! $bookingGuestName) {
-                $message = 'Selected room is not checked-in right now.';
+            if ($customerType === 'booking') {
+                $bookingGuestName = $roomNo ? $this->resolveCheckedInGuestNameByRoomNo($roomNo) : null;
+                if (! $bookingGuestName) {
+                    $message = 'Selected room is not checked-in right now.';
+                    if ($request->expectsJson()) {
+                        return response()->json(['message' => $message], 422);
+                    }
+
+                    return back()->with('error', $message);
+                }
+                $guestName = $bookingGuestName;
+                $waiterName = null;
+                $serveTime = null;
+                $serveDate = null;
+            } else {
+                $roomNo = null;
+            }
+
+            $pendingDraft = $this->findGuestPendingDraftOrder(
+                (int) $session->id,
+                $customerType,
+                $guestName,
+                $roomNo,
+                $resumeOrderId
+            );
+            if ($pendingDraft) {
+                $message = sprintf(
+                    'Is guest ki pending bill pehle se maujood hai (%s). Pehle Resume kar ke pay karein ya Discard karein.',
+                    $pendingDraft->order_no
+                );
                 if ($request->expectsJson()) {
                     return response()->json(['message' => $message], 422);
                 }
 
                 return back()->with('error', $message);
             }
-            $guestName = $bookingGuestName;
-            $waiterName = null;
-            $serveTime = null;
-            $serveDate = null;
-        } else {
-            $roomNo = null;
-        }
-
-        $pendingDraft = $this->findGuestPendingDraftOrder(
-            (int) $session->id,
-            $customerType,
-            $guestName,
-            $roomNo,
-            $resumeOrderId
-        );
-        if ($pendingDraft) {
-            $message = sprintf(
-                'Is guest ki pending bill pehle se maujood hai (%s). Pehle Resume kar ke pay karein ya Discard karein.',
-                $pendingDraft->order_no
-            );
-            if ($request->expectsJson()) {
-                return response()->json(['message' => $message], 422);
-            }
-
-            return back()->with('error', $message);
         }
 
         $updatedExisting = false;
         $clientTotals = $this->clientHoldTotalsFromRequest($request);
-        $order = DB::connection('tenant')->transaction(function () use ($request, $session, $itemsNormalized, $guestName, $roomNo, $waiterName, $serveTime, $serveDate, $orderNotes, $customerType, $saleMode, $resumeOrderId, $clientTotals, &$updatedExisting) {
+        $order = DB::connection('tenant')->transaction(function () use ($request, $session, $itemsNormalized, $guestName, $roomNo, $waiterName, $serveTime, $serveDate, $orderNotes, $customerType, $saleMode, $serviceType, $restaurantTableId, $resumeOrderId, $clientTotals, &$updatedExisting) {
             $enableTables = (string) Setting::get('pos_enable_tables', '1') !== '0';
-            $tableId = ($enableTables && $customerType !== 'booking') ? $request->integer('table_id') : null;
+            if ($this->isRestaurantPosRequest($request)) {
+                $tableId = $restaurantTableId;
+            } else {
+                $tableId = ($enableTables && $customerType !== 'booking') ? $request->integer('table_id') : null;
+            }
             $pricing = $this->posPricingOptions();
             $billTax = $pricing['tax_mode'] === 'bill'
                 ? round((float) $request->input('bill_tax_percent', $pricing['default_tax_rate']), 3)
@@ -943,6 +995,7 @@ class PosController extends Controller
 
             $orderPayload = [
                 'customer_type' => $customerType,
+                'service_type' => $serviceType,
                 'sale_mode' => $saleMode,
                 'table_id' => $tableId ?: null,
                 'guest_name' => $guestName,
@@ -1854,6 +1907,11 @@ class PosController extends Controller
                     $table->string('sale_mode', 20)->default('customer')->after('customer_type');
                 });
             }
+            if (! Schema::hasColumn('pos_orders', 'service_type')) {
+                Schema::table('pos_orders', function (Blueprint $table) {
+                    $table->string('service_type', 20)->nullable()->after('customer_type');
+                });
+            }
         } catch (\Throwable $e) {
             report($e);
         }
@@ -2012,6 +2070,8 @@ class PosController extends Controller
             'status' => $order->status,
             'is_pending' => $order->status === 'draft',
             'customer_type' => $order->customerTypeKey(),
+            'service_type' => $order->serviceTypeKey(),
+            'service_type_label' => $order->serviceTypeLabel(),
             'guest_name' => $order->guest_name,
             'waiter_name' => $order->waiter_name,
             'order_notes' => trim((string) ($order->order_notes ?? '')),
@@ -2288,6 +2348,76 @@ class PosController extends Controller
         $type = (string) $value;
 
         return in_array($type, ['booking', 'ast_offr', 'mess_use'], true) ? $type : 'mess_use';
+    }
+
+    private function isRestaurantPosRequest(Request $request): bool
+    {
+        return $request->routeIs('restaurant-pos.checkout') || $request->routeIs('restaurant-pos.hold');
+    }
+
+    private function normalizeServiceType(mixed $value): string
+    {
+        $type = (string) $value;
+
+        return in_array($type, [
+            PosOrder::SERVICE_DINE_IN,
+            PosOrder::SERVICE_TAKEAWAY,
+            PosOrder::SERVICE_DELIVERY,
+        ], true) ? $type : PosOrder::SERVICE_DINE_IN;
+    }
+
+    /**
+     * @return array{
+     *     customer_type: string,
+     *     service_type: string,
+     *     guest_name: ?string,
+     *     room_no: ?string,
+     *     waiter_name: ?string,
+     *     order_notes: ?string,
+     *     serve_time: ?string,
+     *     serve_date: ?string,
+     *     is_credit: bool,
+     *     contact_id: ?int,
+     *     sale_mode: string,
+     *     table_id: ?int
+     * }
+     */
+    private function restaurantPosOrderMeta(Request $request): array
+    {
+        $serviceType = $this->normalizeServiceType($request->input('service_type'));
+        $enableTables = (string) Setting::get('pos_enable_tables', '1') !== '0';
+
+        $guestName = null;
+        $roomNo = null;
+        $orderNotes = null;
+        $tableId = null;
+
+        if ($serviceType === PosOrder::SERVICE_DINE_IN) {
+            if ($enableTables) {
+                $tableId = $request->integer('table_id') ?: null;
+            } else {
+                $guestName = $this->nullableText($request->input('guest_name'));
+            }
+        } elseif ($serviceType === PosOrder::SERVICE_DELIVERY) {
+            $guestName = $this->nullableText($request->input('guest_name'));
+            $roomNo = $this->nullableText($request->input('room_no'));
+            $orderNotes = $this->nullableText($request->input('order_notes'));
+        }
+
+        return [
+            'customer_type' => 'mess_use',
+            'service_type' => $serviceType,
+            'guest_name' => $guestName,
+            'room_no' => $roomNo,
+            'waiter_name' => null,
+            'order_notes' => $orderNotes,
+            'serve_time' => null,
+            'serve_date' => null,
+            'is_credit' => false,
+            'contact_id' => null,
+            'sale_mode' => 'customer',
+            'table_id' => $tableId,
+        ];
     }
 
     private function ensurePosTablesSchema(): void

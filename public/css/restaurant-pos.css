@@ -236,6 +236,54 @@ body.admin-app-body:has(.restaurant-pos-app) .admin-main {
     box-shadow: 0 2px 8px rgba(217, 119, 6, 0.22);
 }
 
+.restaurant-pos-app .rp-service-types {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    flex-wrap: wrap;
+}
+
+.restaurant-pos-app .rp-service-type {
+    border: 1px solid #d6d3d1;
+    background: #fff;
+    color: #44403c;
+    font-family: var(--rp-font);
+    font-size: 0.78rem;
+    font-weight: 600;
+    padding: 0.38rem 0.85rem;
+    border-radius: 8px;
+    line-height: 1.2;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, color 0.15s, box-shadow 0.15s;
+    white-space: nowrap;
+}
+
+.restaurant-pos-app .rp-service-type:hover {
+    border-color: #d97706;
+    color: #92400e;
+    background: #fffbeb;
+}
+
+.restaurant-pos-app .rp-service-type.is-active {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    border-color: #d97706;
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(217, 119, 6, 0.22);
+}
+
+.restaurant-pos-app .rp-service-details .form-label {
+    color: #78716c;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    font-size: 0.62rem;
+}
+
+.restaurant-pos-app .rp-service-details .form-control,
+.restaurant-pos-app .rp-service-details .form-select {
+    min-width: 8rem;
+}
+
 /* —— Order fields strip —— */
 .restaurant-pos-app .rp-order-zone {
     background: var(--rp-bg-elevated);

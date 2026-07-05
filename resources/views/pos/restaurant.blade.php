@@ -6,14 +6,14 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="{{ asset('css/restaurant-pos.css') }}?v=25">
+<link rel="stylesheet" href="{{ asset('css/restaurant-pos.css') }}?v=26">
 @endpush
 
 @section('content')
 @php
-    $defaultCustomerType = old('customer_type', $posSettings['resume_customer_type'] ?? 'mess_use');
-    if ($defaultCustomerType === 'booking') {
-        $defaultCustomerType = 'mess_use';
+    $defaultServiceType = old('service_type', $posSettings['resume_service_type'] ?? 'dine_in');
+    if (! array_key_exists($defaultServiceType, \App\Models\PosOrder::serviceTypeLabels())) {
+        $defaultServiceType = 'dine_in';
     }
     $productJs = $products->map(function ($p) {
         return [
@@ -117,79 +117,53 @@
 
     <div class="rp-order-zone">
         <div class="rp-order-fields" id="rpOrderFieldsPanel">
-            <div class="row g-1 align-items-end rp-fields-grid">
-                <div class="col-12 col-md-auto rp-field-cell rp-customer-type-cell">
-                    <input type="hidden" id="rpCustomerType" value="{{ $defaultCustomerType }}">
-                    <div class="rp-customer-types" id="rpCustomerTypes" role="group" aria-label="Customer type">
-                        <button type="button" class="rp-customer-type{{ $defaultCustomerType === 'mess_use' ? ' is-active' : '' }}" data-type="mess_use">Walk-In</button>
-                        <button type="button" class="rp-customer-type{{ $defaultCustomerType === 'ast_offr' ? ' is-active' : '' }}" data-type="ast_offr">{{ \App\Models\PosOrder::MESS_BILL_LABEL }}</button>
-                    </div>
-                </div>
-                @if($posSettings['enable_tables'] ?? false)
-                    <div class="col-6 col-md-2 col-lg-auto rp-field-cell" id="rpTableBlock">
-                        <label class="form-label" for="rpTable">Table</label>
+            <input type="hidden" id="rpServiceType" value="{{ $defaultServiceType }}">
+            <div class="rp-service-types" id="rpServiceTypes" role="tablist" aria-label="Order type">
+                @foreach(\App\Models\PosOrder::serviceTypeLabels() as $key => $label)
+                    <button type="button"
+                            class="rp-service-type{{ $defaultServiceType === $key ? ' is-active' : '' }}"
+                            data-type="{{ $key }}"
+                            role="tab"
+                            aria-selected="{{ $defaultServiceType === $key ? 'true' : 'false' }}">{{ $label }}</button>
+                @endforeach
+            </div>
+            <div class="rp-service-details row g-2 mt-2 align-items-end" id="rpServiceDetails">
+                <div class="col-12 col-md-auto rp-service-panel d-none" id="rpDineInPanel" data-service="dine_in">
+                    @if($posSettings['enable_tables'] ?? false)
+                        <label class="form-label small mb-1" for="rpTable">Table No.</label>
                         <select id="rpTable" class="form-select form-select-sm">
-                            <option value="">No table</option>
+                            <option value="">Select table…</option>
                             @foreach($tables as $t)
                                 <option value="{{ $t->id }}" @selected(($posSettings['resume_table_id'] ?? null) === (int) $t->id)>{{ $t->name }}</option>
                             @endforeach
                         </select>
-                    </div>
-                @endif
-                <div class="col-6 col-md-2 col-lg-auto rp-field-cell" id="rpWalkInGuestCol">
-                    <label class="form-label" for="rpGuestName">Guest</label>
-                    <input type="text" id="rpGuestName" class="form-control form-control-sm" maxlength="120"
-                           value="{{ old('guest_name', $posSettings['resume_guest_name'] ?? '') }}">
+                    @else
+                        <label class="form-label small mb-1" for="rpTableNo">Table No.</label>
+                        <input type="text" id="rpTableNo" class="form-control form-control-sm" maxlength="50"
+                               value="{{ old('guest_name', $posSettings['resume_guest_name'] ?? '') }}"
+                               placeholder="e.g. 12">
+                    @endif
                 </div>
-                <div class="col-6 col-md-2 col-lg-auto rp-field-cell" id="rpWalkInWaiterCol">
-                    <label class="form-label" for="rpWaiter">Waiter</label>
-                    <select id="rpWaiter" class="form-select form-select-sm">
-                        <option value="">Select…</option>
-                        @foreach($waiters as $waiter)
-                            <option value="{{ $waiter->name }}" @selected(($posSettings['resume_waiter_name'] ?? '') === $waiter->name)>{{ $waiter->name }}</option>
-                        @endforeach
-                    </select>
-                </div>
-                <div class="col-6 col-md-2 col-lg-auto rp-field-cell" id="rpWalkInServeCol">
-                    <label class="form-label" for="rpServeTime">Serve time</label>
-                    <input type="time" id="rpServeTime" class="form-control form-control-sm"
-                           value="{{ old('serve_time', $posSettings['resume_serve_time'] ?? '') }}">
-                </div>
-                <div class="col-6 col-md-2 col-lg-auto rp-field-cell" id="rpStaffBlock">
-                    <label class="form-label" for="rpSaleMode">Sale for</label>
-                    <select id="rpSaleMode" class="form-select form-select-sm">
-                        <option value="customer" @selected(($posSettings['resume_sale_mode'] ?? 'customer') === 'customer')>Customer</option>
-                        <option value="staff" @selected(($posSettings['resume_sale_mode'] ?? '') === 'staff')>Staff rate</option>
-                    </select>
-                </div>
-                <div class="col-6 col-md-2 col-lg-auto rp-field-cell d-flex align-items-end" id="rpStaffGasCol">
-                    <div class="form-check mb-0 py-1">
-                        <input class="form-check-input" type="checkbox" id="rpStaffGas">
-                        <label class="form-check-label small" for="rpStaffGas">Include gas</label>
-                    </div>
-                </div>
-                <div class="col-6 col-md-3 col-lg-auto rp-field-cell rp-field-notes">
-                    <label class="form-label" for="rpOrderNotes">Notes</label>
-                    <input type="text" id="rpOrderNotes" class="form-control form-control-sm" maxlength="1000"
-                           value="{{ old('order_notes', $posSettings['resume_order_notes'] ?? '') }}"
-                           placeholder="Sirf record ke liye">
-                </div>
-                @if($posSettings['show_customer_section'] ?? true)
-                    <div class="col-12 col-md-auto rp-field-cell" id="rpCreditBlock">
-                        <div class="d-flex flex-wrap align-items-center gap-1">
-                            <div class="form-check form-switch mb-0">
-                                <input class="form-check-input" type="checkbox" id="rpCreditToggle">
-                                <label class="form-check-label small text-danger fw-semibold" for="rpCreditToggle">Credit sale</label>
-                            </div>
-                            <input type="text" id="rpContactSearch" class="form-control form-control-sm" style="max-width:14rem;" placeholder="Search contact…" autocomplete="off">
-                            <div id="rpSelectedContactWrap" class="d-none small px-2 py-1 rounded border bg-light d-inline-flex align-items-center gap-2">
-                                <span id="rpSelectedContact"></span>
-                                <button type="button" class="btn btn-sm btn-link text-danger p-0" id="rpClearContact">×</button>
-                            </div>
+                <div class="col-12 rp-service-panel d-none" id="rpDeliveryPanel" data-service="delivery">
+                    <div class="row g-2">
+                        <div class="col-12 col-md-4">
+                            <label class="form-label small mb-1" for="rpDeliveryName">Customer Name</label>
+                            <input type="text" id="rpDeliveryName" class="form-control form-control-sm" maxlength="120"
+                                   value="{{ old('guest_name', $posSettings['resume_guest_name'] ?? '') }}">
                         </div>
-                        <div id="rpContactDropdown" class="dropdown-menu show d-none border shadow-sm mt-1"></div>
+                        <div class="col-6 col-md-3">
+                            <label class="form-label small mb-1" for="rpDeliveryPhone">Phone No.</label>
+                            <input type="text" id="rpDeliveryPhone" class="form-control form-control-sm" maxlength="50"
+                                   value="{{ old('room_no', $posSettings['resume_room_no'] ?? '') }}">
+                        </div>
+                        <div class="col-12 col-md-5">
+                            <label class="form-label small mb-1" for="rpDeliveryAddress">Address</label>
+                            <input type="text" id="rpDeliveryAddress" class="form-control form-control-sm" maxlength="1000"
+                                   value="{{ old('order_notes', $posSettings['resume_order_notes'] ?? '') }}"
+                                   placeholder="Delivery address">
+                        </div>
                     </div>
-                @endif
+                </div>
             </div>
         </div>
 
@@ -271,16 +245,15 @@
     <input type="hidden" name="type" value="sale">
     <input type="hidden" name="sale_mode" value="customer">
     <input type="hidden" name="staff_include_gas" value="0">
-    <input type="hidden" name="customer_type" value="{{ $defaultCustomerType }}">
+    <input type="hidden" name="customer_type" value="mess_use">
+    <input type="hidden" name="service_type" value="{{ $defaultServiceType }}">
     <input type="hidden" name="resume_order_id" value="{{ $resumedOrder?->id ?? '' }}">
     <input type="hidden" name="is_credit" value="0">
     <input type="hidden" name="contact_id" value="">
     <input type="hidden" name="table_id" value="">
     <input type="hidden" name="guest_name" value="">
     <input type="hidden" name="room_no" value="">
-    <input type="hidden" name="waiter_name" value="">
     <input type="hidden" name="order_notes" value="">
-    <input type="hidden" name="serve_time" value="">
     <input type="hidden" name="items" value="">
     <input type="hidden" name="payments" value="">
     <input type="hidden" name="bill_tax_percent" value="0">
@@ -301,8 +274,8 @@
         'resumeOrderId' => $resumedOrder?->id,
         'pendingBillsDetail' => $pendingBillsDetail ?? [],
         'paidBillsDetail' => $paidBillsDetail ?? [],
-        'messBillLabel' => \App\Models\PosOrder::MESS_BILL_LABEL,
-        'gasRatePercent' => \App\Models\InventoryProduct::gasChargesRatePercent(),
+        'serviceTypeLabels' => \App\Models\PosOrder::serviceTypeLabels(),
+        'tablesEnabled' => (bool) ($posSettings['enable_tables'] ?? false),
         'routes' => [
             'checkout' => route('restaurant-pos.checkout'),
             'hold' => route('restaurant-pos.hold'),
@@ -315,5 +288,5 @@
 <script>
 window.RESTAURANT_POS_BOOTSTRAP = @json($restaurantBootstrap);
 </script>
-<script src="{{ asset('js/restaurant-pos-app.js') }}?v=20"></script>
+<script src="{{ asset('js/restaurant-pos-app.js') }}?v=21"></script>
 @endsection

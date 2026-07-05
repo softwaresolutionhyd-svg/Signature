@@ -24,6 +24,12 @@ class PosOrder extends Model
 
     public const MESS_BILL_LABEL = 'Mess Bill/Offices/Conf Room';
 
+    public const SERVICE_DINE_IN = 'dine_in';
+
+    public const SERVICE_TAKEAWAY = 'takeaway';
+
+    public const SERVICE_DELIVERY = 'delivery';
+
     use BelongsToCompany;
     use HasFactory;
 
@@ -35,6 +41,7 @@ class PosOrder extends Model
         'user_id',
         'contact_id',
         'customer_type',
+        'service_type',
         'sale_mode',
         'guest_name',
         'room_no',
@@ -302,6 +309,33 @@ class PosOrder extends Model
             'ast_offr' => self::MESS_BILL_LABEL,
             default => 'Walk-In',
         };
+    }
+
+    /** @return array<string, string> */
+    public static function serviceTypeLabels(): array
+    {
+        return [
+            self::SERVICE_DINE_IN => 'Dine-in',
+            self::SERVICE_TAKEAWAY => 'Takeaway',
+            self::SERVICE_DELIVERY => 'Delivery',
+        ];
+    }
+
+    public function serviceTypeKey(): ?string
+    {
+        $stored = trim((string) ($this->service_type ?? ''));
+        if ($stored === '') {
+            return null;
+        }
+
+        return array_key_exists($stored, self::serviceTypeLabels()) ? $stored : null;
+    }
+
+    public function serviceTypeLabel(): ?string
+    {
+        $key = $this->serviceTypeKey();
+
+        return $key !== null ? self::serviceTypeLabels()[$key] : null;
     }
 
     public function isWalkInSale(): bool

@@ -52,7 +52,9 @@ class PosCheckoutRequest extends FormRequest
     public function rules(): array
     {
         $isHold = $this->routeIs('restaurant-pos.hold');
+        $isRestaurant = $this->routeIs('restaurant-pos.checkout') || $this->routeIs('restaurant-pos.hold');
         $isCredit = $this->boolean('is_credit');
+        $tablesEnabled = (string) \App\Models\Setting::get('pos_enable_tables', '1') !== '0';
 
         $paymentsRule = $isHold
             ? ['required', 'array', 'min:1']
@@ -66,6 +68,69 @@ class PosCheckoutRequest extends FormRequest
         $payAmountRule = $isHold
             ? ['required', 'numeric', 'min:0']
             : ($isCredit ? ['nullable', 'numeric', 'min:0'] : ['required', 'numeric', 'min:0']);
+
+        if ($isRestaurant) {
+            return [
+                'type' => ['required', 'in:sale,refund'],
+                'service_type' => ['required', 'in:dine_in,takeaway,delivery'],
+                'customer_type' => ['nullable', 'in:mess_use,booking,ast_offr'],
+                'sale_mode' => ['nullable', 'in:customer,staff'],
+                'staff_include_gas' => ['nullable', 'boolean'],
+                'is_credit' => ['nullable', 'boolean'],
+                'contact_id' => ['nullable', 'integer', 'exists:tenant.contacts,id'],
+                'guest_name' => [
+                    Rule::requiredIf(fn () => $this->input('service_type') === 'delivery'
+                        || ($this->input('service_type') === 'dine_in' && ! $tablesEnabled)),
+                    'nullable',
+                    'string',
+                    'max:120',
+                ],
+                'room_no' => [
+                    Rule::requiredIf(fn () => $this->input('service_type') === 'delivery'),
+                    'nullable',
+                    'string',
+                    'max:50',
+                ],
+                'waiter_name' => ['nullable', 'string', 'max:120'],
+                'order_notes' => [
+                    Rule::requiredIf(fn () => $this->input('service_type') === 'delivery'),
+                    'nullable',
+                    'string',
+                    'max:1000',
+                ],
+                'serve_date' => ['nullable', 'date_format:Y-m-d'],
+                'serve_time' => ['nullable', 'date_format:H:i'],
+                'refund_of_order_id' => ['nullable', 'integer', 'exists:tenant.pos_orders,id'],
+                'resume_order_id' => ['nullable', 'integer', 'exists:tenant.pos_orders,id'],
+                'table_id' => [
+                    Rule::requiredIf(fn () => $this->input('service_type') === 'dine_in' && $tablesEnabled),
+                    'nullable',
+                    'integer',
+                    'exists:tenant.pos_tables,id',
+                ],
+                'items' => ['required', 'array', 'min:1'],
+                'items.*.product_id' => ['required', 'integer', 'exists:tenant.inventory_products,id'],
+                'items.*.uom' => ['required', 'string', 'max:30'],
+                'items.*.qty' => ['required', 'numeric', 'gt:0'],
+                'items.*.unit_price' => ['required', 'numeric', 'min:0'],
+                'items.*.discount_percent' => ['nullable', 'numeric', 'min:0', 'max:100'],
+                'items.*.tax_percent' => ['nullable', 'numeric', 'min:0', 'max:100'],
+                'items.*.notes' => ['nullable', 'string', 'max:255'],
+                'items.*.line_total' => ['nullable', 'numeric', 'min:0'],
+                'bill_tax_percent' => ['nullable', 'numeric', 'min:0', 'max:100'],
+                'bill_discount_percent' => ['nullable', 'numeric', 'min:0', 'max:100'],
+                'client_grand_total' => ['nullable', 'numeric', 'min:0'],
+                'client_subtotal' => ['nullable', 'numeric', 'min:0'],
+                'client_discount_total' => ['nullable', 'numeric', 'min:0'],
+                'client_tax_total' => ['nullable', 'numeric', 'min:0'],
+                'payments' => $paymentsRule,
+                'payments.*.method' => $payMethodRule,
+                'payments.*.amount' => $payAmountRule,
+                'payments.*.reference' => ['nullable', 'string', 'max:100'],
+                'cash_tendered' => ['nullable', 'numeric', 'min:0'],
+                'cash_change' => ['nullable', 'numeric', 'min:0'],
+            ];
+        }
 
         return [
             'type' => ['required', 'in:sale,refund'],

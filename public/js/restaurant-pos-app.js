@@ -2,24 +2,22 @@
     const boot = window.RESTAURANT_POS_BOOTSTRAP || {};
     const products = boot.products || [];
     const menuCategories = boot.menuCategories || [];
-    const contacts = boot.contacts || [];
     const settings = boot.settings || {};
     const routes = boot.routes || {};
     const csrf = boot.csrf || '';
-    const posMessBillLabel = boot.messBillLabel || 'Mess Bill';
+    const serviceTypeLabels = boot.serviceTypeLabels || {
+        dine_in: 'Dine-in',
+        takeaway: 'Takeaway',
+        delivery: 'Delivery',
+    };
     const posTaxMode = settings.tax_mode || 'line';
     const posDefaultLineTax = Number(settings.default_tax_rate || 0);
     const posShowDiscount = settings.show_discount !== false;
-    const posTablesEnabled = !!settings.enable_tables;
-    const posGasRatePercent = Number(boot.gasRatePercent || 0);
+    const posTablesEnabled = boot.tablesEnabled !== undefined ? !!boot.tablesEnabled : !!settings.enable_tables;
 
     let cart = [];
     let payments = [{ method: 'cash', amount: 0 }];
     let orderType = 'sale';
-    let saleMode = settings.resume_sale_mode || 'customer';
-    let staffIncludeGas = false;
-    let isCreditMode = false;
-    let selectedContactId = null;
     let resumeOrderId = boot.resumeOrderId || null;
     let selectedMenuCategoryId = null;
 
@@ -42,21 +40,51 @@
         return parseFloat(v.toFixed(3)).toString();
     }
 
-    function selectedCustomerType() {
-        return $('#rpCustomerType')?.value || 'mess_use';
+    function selectedServiceType() {
+        return $('#rpServiceType')?.value || 'dine_in';
     }
 
-    function setCustomerType(type) {
-        const input = $('#rpCustomerType');
+    function serviceTypeLabel(type) {
+        return serviceTypeLabels[type] || serviceTypeLabels.dine_in || 'Dine-in';
+    }
+
+    function setServiceType(type) {
+        const input = $('#rpServiceType');
         if (input) input.value = type;
-        $$('.rp-customer-type').forEach((btn) => {
-            btn.classList.toggle('is-active', btn.dataset.type === type);
+        $$('.rp-service-type').forEach((btn) => {
+            const active = btn.dataset.type === type;
+            btn.classList.toggle('is-active', active);
+            btn.setAttribute('aria-selected', active ? 'true' : 'false');
         });
-        syncCustomerFields();
+        syncServiceDetailPanels();
     }
 
-    function isMessBill() {
-        return selectedCustomerType() === 'ast_offr';
+    function syncServiceDetailPanels() {
+        const type = selectedServiceType();
+        $$('.rp-service-panel').forEach((panel) => {
+            panel.classList.toggle('d-none', panel.dataset.service !== type);
+        });
+    }
+
+    function orderMetaLabel(order) {
+        if (order.service_type_label) return order.service_type_label;
+        if (order.service_type) return serviceTypeLabel(order.service_type);
+        if (order.guest_name) return order.guest_name;
+        return 'Dine-in';
+    }
+
+    function orderMetaDetail(order) {
+        const parts = [];
+        if (order.service_type === 'dine_in' || order.service_type_label === 'Dine-in') {
+            if (order.table_name) parts.push('Table ' + order.table_name);
+            else if (order.guest_name) parts.push('Table ' + order.guest_name);
+        } else if (order.service_type === 'delivery' || order.service_type_label === 'Delivery') {
+            if (order.guest_name) parts.push(order.guest_name);
+            if (order.room_no) parts.push(order.room_no);
+        } else if (order.guest_name) {
+            parts.push(order.guest_name);
+        }
+        return parts.join(' · ') || '—';
     }
 
     function factorForUom(p, uomCode) {
@@ -67,29 +95,12 @@
         return row && Number(row.factor) > 0 ? Number(row.factor) : 1;
     }
 
-    function gasChargeForProduct(p) {
-        const direct = Number(p.gas_charges || 0);
-        if (direct > 0) return direct;
-        const cost = Number(p.cost || 0);
-        return cost > 0 && posGasRatePercent > 0 ? Math.round(cost * posGasRatePercent / 100 * 100) / 100 : 0;
-    }
-
     function unitPriceForProduct(p, uomCode) {
         const factor = factorForUom(p, uomCode);
-        if (isMessBill()) {
-            const cost = Number(p.cost || 0) * factor;
-            return Math.round(cost * 100) / 100;
-        }
-        if (saleMode === 'staff') {
-            const cost = Number(p.cost || 0) * factor;
-            const gas = gasChargeForProduct(p) * factor;
-            return Math.round((cost + gas) * 100) / 100;
-        }
         return Math.round(Number(p.price || 0) * factor * 100) / 100;
     }
 
     function isProductVisible(p) {
-        if (isMessBill()) return !!(p.for_purchase || p.for_pos);
         return !!p.for_pos;
     }
 
@@ -395,11 +406,10 @@
                 return;
             }
             wrap.innerHTML = orders.map((o) => {
-                const table = [o.table_name, o.room_no].filter(Boolean).join(' / ') || '—';
                 const resumeUrl = (routes.resume || '').replace('__ID__', String(o.id));
                 return `<a class="rp-order-card" href="${escHtml(resumeUrl)}">
                     <div class="rp-oc-no">${escHtml(o.order_no)}</div>
-                    <div class="rp-oc-meta">${escHtml(o.guest_name || 'Guest')} · ${escHtml(table)}</div>
+                    <div class="rp-oc-meta">${escHtml(orderMetaLabel(o))} · ${escHtml(orderMetaDetail(o))}</div>
                     <div class="rp-oc-meta">${escHtml(fmtMoney(o.grand_total))} · ${o.items_count || 0} items</div>
                 </a>`;
             }).join('');
@@ -414,67 +424,15 @@
             return;
         }
         wrap.innerHTML = paid.map((o) => {
-            const table = [o.table_name, o.room_no].filter(Boolean).join(' / ') || '—';
             const receiptUrl = (routes.receipt || '').replace('__ID__', String(o.id));
             const paidAt = o.paid_at_full || o.paid_at || '';
             return `<a class="rp-order-card rp-order-card-paid" href="${escHtml(receiptUrl)}" target="_blank" rel="noopener">
                 <div class="rp-oc-no">${escHtml(o.order_no)}</div>
-                <div class="rp-oc-meta">${escHtml(o.guest_name || 'Guest')} · ${escHtml(table)}</div>
+                <div class="rp-oc-meta">${escHtml(orderMetaLabel(o))} · ${escHtml(orderMetaDetail(o))}</div>
                 <div class="rp-oc-meta">${escHtml(fmtMoney(o.grand_total))} · ${o.payment_label || 'Paid'}</div>
                 ${paidAt ? `<div class="rp-oc-pay">${escHtml(paidAt)}</div>` : ''}
             </a>`;
         }).join('');
-    }
-
-    function syncSaleModeUi() {
-        const type = selectedCustomerType();
-        const walkInOrInHouse = type === 'mess_use' || type === 'booking';
-        const isStaff = saleMode === 'staff';
-
-        $('#rpStaffGasCol')?.classList.toggle('d-none', type !== 'ast_offr');
-
-        if (walkInOrInHouse && isStaff) {
-            staffIncludeGas = true;
-        } else if (!isMessBill()) {
-            staffIncludeGas = false;
-            if ($('#rpStaffGas')) $('#rpStaffGas').checked = false;
-        }
-    }
-
-    function syncCustomerFields() {
-        const type = selectedCustomerType();
-        const walkIn = type === 'mess_use';
-        const booking = type === 'booking';
-        $('#rpWalkInGuestCol')?.classList.toggle('d-none', !walkIn);
-        $('#rpWalkInWaiterCol')?.classList.toggle('d-none', !walkIn);
-        $('#rpWalkInServeCol')?.classList.toggle('d-none', !walkIn);
-        $('#rpBookingFields')?.classList.toggle('d-none', !booking);
-        $('#rpTableBlock')?.classList.toggle('d-none', booking || !posTablesEnabled);
-        $('#rpCreditBlock')?.classList.toggle('d-none', type === 'ast_offr');
-        if (type === 'ast_offr') {
-            isCreditMode = true;
-            saleMode = 'staff';
-            $('#rpCreditToggle') && ($('#rpCreditToggle').checked = true);
-        }
-        $('#rpStaffBlock')?.classList.toggle('d-none', type === 'ast_offr');
-        syncSaleModeUi();
-        applySaleModePricing();
-        renderMenuGrid();
-    }
-
-    function setCreditMode(on) {
-        const type = selectedCustomerType();
-        if (type === 'ast_offr') on = true;
-        isCreditMode = on;
-        const toggle = $('#rpCreditToggle');
-        if (toggle) {
-            toggle.checked = on;
-            toggle.disabled = type === 'ast_offr';
-        }
-        $('#rpPaymentsBlock')?.classList.toggle('d-none', on);
-        $('#rpPayBtn')?.classList.toggle('btn-rp-primary', !on);
-        $('#rpPayBtn')?.classList.toggle('btn-danger', on);
-        if ($('#rpPayBtn')) $('#rpPayBtn').textContent = on ? 'Record Credit' : 'Pay Now';
     }
 
     function renderAll() {
@@ -508,25 +466,34 @@
             alert('Pehle item add karein.');
             return false;
         }
-        const type = selectedCustomerType();
-        if (type === 'mess_use') {
-            if (!($('#rpGuestName')?.value || '').trim()) {
-                alert('Guest name required.');
+
+        const serviceType = selectedServiceType();
+        if (serviceType === 'dine_in') {
+            if (posTablesEnabled) {
+                if (!($('#rpTable')?.value || '').trim()) {
+                    alert('Table No. select karein.');
+                    return false;
+                }
+            } else if (!($('#rpTableNo')?.value || '').trim()) {
+                alert('Table No. enter karein.');
                 return false;
             }
-            if (!($('#rpWaiter')?.value || '').trim()) {
-                alert('Waiter select karein.');
+        } else if (serviceType === 'delivery') {
+            if (!($('#rpDeliveryName')?.value || '').trim()) {
+                alert('Customer Name enter karein.');
                 return false;
             }
-        } else if (type === 'booking' && !($('#rpRoom')?.value || '').trim()) {
-            alert('Room select karein.');
-            return false;
+            if (!($('#rpDeliveryPhone')?.value || '').trim()) {
+                alert('Phone No. enter karein.');
+                return false;
+            }
+            if (!($('#rpDeliveryAddress')?.value || '').trim()) {
+                alert('Address enter karein.');
+                return false;
+            }
         }
-        if ((isCreditMode || type === 'ast_offr') && !selectedContactId) {
-            alert(type === 'ast_offr' ? posMessBillLabel + ' ke liye contact select karein.' : 'Credit sale ke liye contact select karein.');
-            return false;
-        }
-        if (mode === 'checkout' && !isCreditMode && orderType === 'sale') {
+
+        if (mode === 'checkout' && orderType === 'sale') {
             const grand = calcCartTotals().grand;
             const paySum = payments.reduce((s, p) => s + Number(p.amount || 0), 0);
             if (Math.abs(paySum - grand) > 0.02) {
@@ -534,27 +501,39 @@
                 return false;
             }
         }
+
         applySaleModePricing();
         const form = $('#rpSubmitForm');
         if (!form) return false;
+
         form.querySelector('[name="type"]').value = orderType;
-        form.querySelector('[name="sale_mode"]').value = isMessBill() ? 'staff' : saleMode;
-        form.querySelector('[name="staff_include_gas"]').value =
-            (saleMode === 'staff' && !isMessBill()) || (isMessBill() && staffIncludeGas) ? '1' : '0';
-        form.querySelector('[name="customer_type"]').value = type;
-        form.querySelector('[name="is_credit"]').value = (isCreditMode || type === 'ast_offr') ? '1' : '0';
-        form.querySelector('[name="contact_id"]').value = selectedContactId || '';
-        form.querySelector('[name="table_id"]').value = (posTablesEnabled && type !== 'booking') ? ($('#rpTable')?.value || '') : '';
-        form.querySelector('[name="guest_name"]').value = type === 'booking'
-            ? ($('#rpRoom')?.selectedOptions?.[0]?.dataset?.guestName || '')
-            : ($('#rpGuestName')?.value || '');
-        form.querySelector('[name="room_no"]').value = type === 'booking' ? ($('#rpRoom')?.value || '') : '';
-        form.querySelector('[name="waiter_name"]').value = type === 'mess_use' ? ($('#rpWaiter')?.value || '') : '';
-        form.querySelector('[name="order_notes"]').value = ($('#rpOrderNotes')?.value || '').trim();
-        form.querySelector('[name="serve_time"]').value = type === 'mess_use' ? ($('#rpServeTime')?.value || '') : '';
+        form.querySelector('[name="sale_mode"]').value = 'customer';
+        form.querySelector('[name="staff_include_gas"]').value = '0';
+        form.querySelector('[name="customer_type"]').value = 'mess_use';
+        form.querySelector('[name="service_type"]').value = serviceType;
+        form.querySelector('[name="is_credit"]').value = '0';
+        form.querySelector('[name="contact_id"]').value = '';
+
+        if (serviceType === 'dine_in') {
+            form.querySelector('[name="table_id"]').value = posTablesEnabled ? ($('#rpTable')?.value || '') : '';
+            form.querySelector('[name="guest_name"]').value = posTablesEnabled ? '' : ($('#rpTableNo')?.value || '').trim();
+            form.querySelector('[name="room_no"]').value = '';
+            form.querySelector('[name="order_notes"]').value = '';
+        } else if (serviceType === 'delivery') {
+            form.querySelector('[name="table_id"]').value = '';
+            form.querySelector('[name="guest_name"]').value = ($('#rpDeliveryName')?.value || '').trim();
+            form.querySelector('[name="room_no"]').value = ($('#rpDeliveryPhone')?.value || '').trim();
+            form.querySelector('[name="order_notes"]').value = ($('#rpDeliveryAddress')?.value || '').trim();
+        } else {
+            form.querySelector('[name="table_id"]').value = '';
+            form.querySelector('[name="guest_name"]').value = '';
+            form.querySelector('[name="room_no"]').value = '';
+            form.querySelector('[name="order_notes"]').value = '';
+        }
+
         form.querySelector('[name="items"]').value = JSON.stringify(cartItemsForSubmit());
         form.querySelector('[name="payments"]').value = JSON.stringify(
-            (isCreditMode || type === 'ast_offr') ? [] : (mode === 'hold' ? [{ method: 'cash', amount: 0 }] : payments)
+            mode === 'hold' ? [{ method: 'cash', amount: 0 }] : payments
         );
         form.querySelector('[name="bill_tax_percent"]').value = '0';
         form.querySelector('[name="bill_discount_percent"]').value = posShowDiscount ? String(getBillDiscountPercent()) : '0';
@@ -583,7 +562,6 @@
     function resetForNewBill() {
         cart.length = 0;
         resumeOrderId = null;
-        selectedContactId = null;
         payments = [{ method: $('#rpPayMethod')?.value || 'cash', amount: 0 }];
         autoPaymentAmount = true;
 
@@ -592,13 +570,11 @@
             form.querySelector('[name="resume_order_id"]').value = '';
         }
 
-        if ($('#rpGuestName')) $('#rpGuestName').value = '';
-        if ($('#rpWaiter')) $('#rpWaiter').value = '';
-        if ($('#rpServeTime')) $('#rpServeTime').value = '';
         if ($('#rpTable')) $('#rpTable').value = '';
-        if ($('#rpRoom')) $('#rpRoom').selectedIndex = 0;
-        $('#rpSelectedContactWrap')?.classList.add('d-none');
-        if ($('#rpContactSearch')) $('#rpContactSearch').value = '';
+        if ($('#rpTableNo')) $('#rpTableNo').value = '';
+        if ($('#rpDeliveryName')) $('#rpDeliveryName').value = '';
+        if ($('#rpDeliveryPhone')) $('#rpDeliveryPhone').value = '';
+        if ($('#rpDeliveryAddress')) $('#rpDeliveryAddress').value = '';
 
         document.querySelector('.rp-badge-order')?.remove();
 
@@ -608,9 +584,7 @@
             window.history.replaceState({}, '', url.pathname + url.search);
         }
 
-        syncCustomerFields();
-        setCreditMode(false);
-        if (isMessBill()) setCreditMode(true);
+        setServiceType('dine_in');
         renderAll();
         $('#rpProductSearch')?.focus();
     }
@@ -665,13 +639,6 @@
         $('#rpSubmitForm')?.submit();
     }
 
-    function filterContacts(q) {
-        const needle = q.toLowerCase();
-        return contacts.filter((c) =>
-            String(c.name || '').toLowerCase().includes(needle) || String(c.phone || '').toLowerCase().includes(needle)
-        ).slice(0, 12);
-    }
-
     function bindEvents() {
         $('#rpProductSearch')?.addEventListener('input', renderMenuGrid);
         $('#rpMenuCats')?.addEventListener('click', (e) => {
@@ -686,24 +653,11 @@
             if (btn.dataset.action === 'inc') addOrIncrementProduct(id);
             if (btn.dataset.action === 'dec') changeCartQty(id, -1);
         });
-        $('#rpCustomerTypes')?.addEventListener('click', (e) => {
-            const btn = e.target.closest('.rp-customer-type');
+        $('#rpServiceTypes')?.addEventListener('click', (e) => {
+            const btn = e.target.closest('.rp-service-type');
             if (!btn?.dataset.type) return;
-            setCustomerType(btn.dataset.type);
+            setServiceType(btn.dataset.type);
         });
-        $('#rpSaleMode')?.addEventListener('change', () => {
-            saleMode = $('#rpSaleMode')?.value || 'customer';
-            syncSaleModeUi();
-            applySaleModePricing();
-            renderAll();
-        });
-        $('#rpStaffGas')?.addEventListener('change', () => {
-            if (!isMessBill()) return;
-            staffIncludeGas = !!$('#rpStaffGas')?.checked;
-            applySaleModePricing();
-            renderAll();
-        });
-        $('#rpCreditToggle')?.addEventListener('change', (e) => setCreditMode(e.target.checked));
         $('#rpHoldBtn')?.addEventListener('click', () => submitHoldOrder());
         $('#rpPayBtn')?.addEventListener('click', () => submitOrder('checkout'));
         $('#rpTabPending')?.addEventListener('click', () => setOrderListMode('pending'));
@@ -712,34 +666,6 @@
         $('#rpTabCart')?.addEventListener('click', () => togglePanelView('cart'));
         $('#rpToggleCartView')?.addEventListener('click', () => togglePanelView('cart'));
         $('#rpBillDiscount')?.addEventListener('input', renderTotals);
-
-        const contactSearch = $('#rpContactSearch');
-        const contactDrop = $('#rpContactDropdown');
-        contactSearch?.addEventListener('input', () => {
-            const q = contactSearch.value.trim();
-            if (q.length < 1) {
-                contactDrop?.classList.add('d-none');
-                return;
-            }
-            const rows = filterContacts(q);
-            contactDrop.innerHTML = rows.map((c) =>
-                `<button type="button" class="dropdown-item" data-id="${c.id}" data-name="${escHtml(c.name)}" data-phone="${escHtml(c.phone || '')}">${escHtml(c.name)} <span class="text-secondary">${escHtml(c.phone || '')}</span></button>`
-            ).join('') || '<div class="dropdown-item-text text-secondary small">No contact</div>';
-            contactDrop.classList.remove('d-none');
-        });
-        contactDrop?.addEventListener('click', (e) => {
-            const btn = e.target.closest('[data-id]');
-            if (!btn) return;
-            selectedContactId = btn.dataset.id;
-            $('#rpSelectedContact').textContent = btn.dataset.name + (btn.dataset.phone ? ' · ' + btn.dataset.phone : '');
-            $('#rpSelectedContactWrap')?.classList.remove('d-none');
-            contactDrop.classList.add('d-none');
-            contactSearch.value = '';
-        });
-        $('#rpClearContact')?.addEventListener('click', () => {
-            selectedContactId = null;
-            $('#rpSelectedContactWrap')?.classList.add('d-none');
-        });
 
         $('#rpPayMethod')?.addEventListener('change', () => {
             payments = [{ method: $('#rpPayMethod')?.value || 'cash', amount: calcCartTotals().grand }];
@@ -783,12 +709,13 @@
     }
 
     function init() {
-        if (settings.resume_sale_mode) saleMode = settings.resume_sale_mode;
+        if (settings.resume_service_type) {
+            setServiceType(settings.resume_service_type);
+        } else {
+            syncServiceDetailPanels();
+        }
         loadResumeItems();
         bindEvents();
-        syncCustomerFields();
-        setCreditMode(false);
-        if (isMessBill()) setCreditMode(true);
         updateOrderTabCounts();
         renderAll();
         payments = [{ method: 'cash', amount: 0 }];
