@@ -58,14 +58,17 @@ class LoginController extends Controller
         }
 
         if ($user->hasTwoFactorEnabled()) {
-            $token = $this->loginTotp->startChallenge($user, $request->boolean('remember'));
+            $token = $this->loginTotp->startChallenge($user, false);
             $request->session()->put('login_totp_token', $token);
             $this->clearLoginAttempts($request);
 
             return redirect()->route('login.verify-totp');
         }
 
-        Auth::login($user, $request->boolean('remember'));
+        Auth::login($user, false);
+        if ($user->remember_token) {
+            $user->forceFill(['remember_token' => null])->save();
+        }
         $request->session()->regenerate();
         $this->clearLoginAttempts($request);
         $this->authenticated($request, $user);

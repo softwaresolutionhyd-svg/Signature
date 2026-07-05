@@ -60,7 +60,10 @@ class TotpVerificationController extends Controller
 
         $this->rateLimit->clear($rateKey);
         $request->session()->forget('login_totp_token');
-        Auth::login($result['user'], $result['remember']);
+        Auth::login($result['user'], false);
+        if ($result['user']->remember_token) {
+            $result['user']->forceFill(['remember_token' => null])->save();
+        }
         $request->session()->regenerate();
 
         if ($result['user']->isPlatformSuperAdmin()) {

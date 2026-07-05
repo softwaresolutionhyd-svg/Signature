@@ -84,13 +84,6 @@
                         @enderror
                     </div>
 
-                    <div class="auth-options">
-                        <div class="form-check mb-0">
-                            <input class="form-check-input" type="checkbox" name="remember" id="remember" {{ old('remember') ? 'checked' : '' }}>
-                            <label class="form-check-label" for="remember">{{ __('Remember me') }}</label>
-                        </div>
-                    </div>
-
                     <button type="submit" class="auth-btn-submit">
                         <span>{{ __('Sign In') }}</span>
                         <i class="bi bi-arrow-right-short"></i>
