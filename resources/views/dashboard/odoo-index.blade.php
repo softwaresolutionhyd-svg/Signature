@@ -107,12 +107,12 @@
                     <div class="odoo-app-desc">Manage staff and permissions</div>
                 </a>
 
-                <a href="#" class="odoo-app-card" style="opacity: 0.6; cursor: not-allowed;">
+                <a href="{{ route('accounts.index') }}" class="odoo-app-card">
                     <div class="odoo-app-icon" style="background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);">
                         <i class="bi bi-cash-coin"></i>
                     </div>
-                    <div class="odoo-app-title">Accounting</div>
-                    <div class="odoo-app-desc">Financial management (Coming Soon)</div>
+                    <div class="odoo-app-title">Accounts</div>
+                    <div class="odoo-app-desc">Chart of accounts & journal entries</div>
                 </a>
 
                 <a href="#" class="odoo-app-card" style="opacity: 0.6; cursor: not-allowed;">

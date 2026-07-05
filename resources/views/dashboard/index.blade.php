@@ -251,6 +251,21 @@
         </a>
         @endif
 
+        @if($u->canViewModule('accounts'))
+        <a class="odoo-app" href="{{ route('accounts.index') }}">
+            <div class="odoo-icon" style="--icon-color:#2563eb;">
+                <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="5" y="6" width="30" height="28" rx="3" stroke="currentColor" stroke-width="2.5"/>
+                    <path d="M5 14h30" stroke="currentColor" stroke-width="2"/>
+                    <path d="M12 22h8M12 27h12" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity="0.75"/>
+                    <circle cx="30" cy="30" r="8" fill="currentColor" opacity="0.15"/>
+                    <path d="M27 30h6M30 27v6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+            </div>
+            <span class="odoo-label">Accounts</span>
+        </a>
+        @endif
+
         @if($u->canViewModule('reports'))
         <a class="odoo-app" href="{{ route('reports.index') }}">
             <div class="odoo-icon" style="--icon-color:#f97316;">

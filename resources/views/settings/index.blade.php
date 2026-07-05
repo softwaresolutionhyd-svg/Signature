@@ -315,6 +315,25 @@
             </div>
             <div class="col-lg-6">
                 <div class="card shadow-sm h-100">
+                    <div class="card-header bg-white fw-semibold"><i class="bi bi-journal-bookmark me-1"></i> Accounts</div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label" for="accounts_per_page">Chart of accounts — rows per page</label>
+                                <input type="number" class="form-control" id="accounts_per_page" name="accounts_per_page" min="5" max="100" required
+                                       value="{{ old('accounts_per_page', $settings['accounts_per_page'] ?? 25) }}">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label" for="accounts_journal_per_page">Journal entries — rows per page</label>
+                                <input type="number" class="form-control" id="accounts_journal_per_page" name="accounts_journal_per_page" min="5" max="100" required
+                                       value="{{ old('accounts_journal_per_page', $settings['accounts_journal_per_page'] ?? 25) }}">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="card shadow-sm h-100">
                     <div class="card-header bg-white fw-semibold"><i class="bi bi-people me-1"></i> Employees</div>
                     <div class="card-body">
                         <div class="row g-3">
