@@ -124,7 +124,7 @@
             return `https://wa.me/${phone}?text=${encodedText}`;
         }
 
-        return `https://web.whatsapp.com/send?phone=${phone}&text=${encodedText}`;
+        return `whatsapp://send?phone=${phone}&text=${encodedText}`;
     }
 
     function openDeliveryWhatsapp() {
@@ -145,7 +145,12 @@
             return;
         }
         const text = encodeURIComponent(buildDeliveryWhatsappMessage());
-        window.open(whatsappSendUrl(phone, text), '_blank', 'noopener,noreferrer');
+        const url = whatsappSendUrl(phone, text);
+        if (url.startsWith('whatsapp://')) {
+            window.location.href = url;
+            return;
+        }
+        window.open(url, '_blank', 'noopener,noreferrer');
     }
 
     function setCreditMode(on) {
